@@ -19,9 +19,9 @@ import cPickle as pickle
 from decimal import Decimal
 from time import strftime
 from datetime import date
-from parameters import *
+import config
+import parameters as param
 from utils import *
-from config import *
 from mode import *
 from graphics import *
 
@@ -36,10 +36,10 @@ def edit_config_ini():
         cmd = 'open'
     else:
         cmd = 'xdg-open'
-    print (cmd + ' "' + os.path.join(get_data_dir(), CONFIGFILE) + '"')
+    print (cmd + ' "' + os.path.join(get_data_dir(), param.CONFIGFILE) + '"')
     window.on_close()
     import subprocess
-    subprocess.call((cmd + ' "' + os.path.join(get_data_dir(), CONFIGFILE) + '"'), shell=True)
+    subprocess.call((cmd + ' "' + os.path.join(get_data_dir(), param.CONFIGFILE) + '"'), shell=True)
     sys.exit(0)
 
 
@@ -61,12 +61,12 @@ def dump_pyglet_info():
     
 # parse config file & command line options
 if '--debug' in sys.argv:
-    DEBUG = True
+    param.DEBUG = True
 if '--vsync' in sys.argv or sys.platform == 'darwin':
-    VSYNC = True
+    param.VSYNC = True
 if '--dump' in sys.argv:
     dump_pyglet_info()
-try: CONFIGFILE = sys.argv[sys.argv.index('--configfile') + 1]
+try: param.CONFIGFILE = sys.argv[sys.argv.index('--configfile') + 1]
 except: pass
 
 messagequeue = [] # add messages generated during loading here
@@ -79,7 +79,7 @@ class Message:
         self.batch = pyglet.graphics.Batch()
         self.label = pyglet.text.Label(msg, 
                             font_name='Times New Roman',
-                            color=cfg.COLOR_TEXT,
+                            color=config.cfg.COLOR_TEXT,
                             batch=self.batch,
                             multiline=True,
                             width=(4*window.width)/5,
@@ -125,27 +125,21 @@ def load_last_user(lastuserpath):
         del p
         f.close()
         if not options['USER'].lower() == 'default':
-            global USER
-            global STATS_BINARY
-            global CONFIGFILE
-            USER = options['USER']
-            CONFIGFILE = USER + '-config.ini'
-            STATS_BINARY = USER + '-logfile.dat'
+            param.USER = options['USER']
+            param.CONFIGFILE = param.USER + '-config.ini'
+            param.STATS_BINARY = param.USER + '-logfile.dat'
 
 def save_last_user(lastuserpath):
     try:
         f = file(os.path.join(get_data_dir(), lastuserpath), 'w')
         p = pickle.Pickler(f)
-        p.dump({'USER': USER})
+        p.dump({'USER': param.USER})
         # also do date of last session?
     except:
         pass
 
 check_and_move_user_data()
 load_last_user('defaults.ini')
-
-import config
-cfg = config.cfg
 
 
 # this function checks if a new update for Brain Workshop is available.
@@ -154,18 +148,18 @@ update_version = 0
 def update_check():
     global update_available
     global update_version
-    socket.setdefaulttimeout(TIMEOUT_SILENT)
-    req = urllib2.Request(WEB_VERSION_CHECK)
+    socket.setdefaulttimeout(param.TIMEOUT_SILENT)
+    req = urllib2.Request(param.WEB_VERSION_CHECK)
     try:
         response = urllib2.urlopen(req)
         version = response.readline().strip()
     except:
         return
-    if version > VERSION: # simply comparing strings works just fine
+    if version > param.VERSION: # simply comparing strings works just fine
         update_available = True
         update_version = version
 
-if cfg.VERSION_CHECK_ON_STARTUP and not CLINICAL_MODE:
+if config.cfg.VERSION_CHECK_ON_STARTUP and not param.CLINICAL_MODE:
     update_check()
 try:
     # workaround for pyglet.gl.ContextException error on certain video cards.
@@ -173,10 +167,10 @@ try:
     # import pyglet
     import pyglet
     from pyglet.gl import *
-    if NOVBO: pyglet.options['graphics_vbo'] = False
+    if param.NOVBO: pyglet.options['graphics_vbo'] = False
     from pyglet.window import key
 except:
-    quit_with_error(_('Error: unable to load pyglet.  If you already installed pyglet, please ensure ctypes is installed.  Please visit %s') % WEB_PYGLET_DOWNLOAD)
+    quit_with_error(_('Error: unable to load pyglet.  If you already installed pyglet, please ensure ctypes is installed.  Please visit %s') % param.WEB_PYGLET_DOWNLOAD)
 try:
     pyglet.options['audio'] = ('directsound', 'openal', 'alsa', )
     # use in pyglet 1.2: pyglet.options['audio'] = ('directsound', 'pulse', 'openal', )
@@ -191,13 +185,13 @@ except:
 
 res_path = get_res_dir()
 if not os.access(res_path, os.F_OK):
-    quit_with_error(_('Error: the resource folder\n%s') % res_path + 
+    quit_with_error(_('Error: the resource folder\n%s') % res_path +
                     _(' does not exist or is not readable.  Exiting'), trace=False)
 
 if pyglet.version < '1.1':
     quit_with_error(_('Error: pyglet 1.1 or greater is required.\n') + 
                     _('You probably have an older version of pyglet installed.\n') +
-                    _('Please visit %s') % WEB_PYGLET_DOWNLOAD, trace=False)
+                    _('Please visit %s') % param.WEB_PYGLET_DOWNLOAD, trace=False)
 
 supportedtypes = {'sounds' :['wav'],
                   'music'  :['wav', 'ogg', 'mp3', 'aac', 'mp2', 'ac3', 'm4a'], # what else?
@@ -237,17 +231,17 @@ def test_avbin():
             loaded_music = pyglet.media.load(music_file, streaming=False)
             del loaded_music
         else:
-            cfg.USE_MUSIC = False
+            config.cfg.USE_MUSIC = False
         
     except ImportError:
-        cfg.USE_MUSIC = False
+        config.cfg.USE_MUSIC = False
         if pyglet.version >= '1.2':  
             pyglet.media.have_avbin = False
         print _('AVBin not detected. Music disabled.')
         print _('Download AVBin from: http://code.google.com/p/avbin/')
 
     except: # WindowsError
-        cfg.USE_MUSIC = False
+        config.cfg.USE_MUSIC = False
         pyglet.media.have_avbin = False 
         if hasattr(pyglet.media, '_source_class'): # pyglet v1.1
             import pyglet.media.riff
@@ -276,7 +270,7 @@ Press any key to continue without music support.
 
 test_avbin()
 if pyglet.media.have_avbin: supportedtypes['sounds'] = supportedtypes['music']
-elif cfg.USE_MUSIC:         supportedtypes['music'] = supportedtypes['sounds']
+elif config.cfg.USE_MUSIC:         supportedtypes['music'] = supportedtypes['sounds']
 else:                       del supportedtypes['music']
 
 supportedtypes['misc'] = supportedtypes['sounds'] + supportedtypes['sprites']
@@ -302,7 +296,7 @@ for k in resourcepaths['sounds'].keys():
 
 sound = sounds['letters'] # is this obsolete yet?
     
-if cfg.USE_APPLAUSE:
+if config.cfg.USE_APPLAUSE:
     applausesounds = [pyglet.media.load(soundfile, streaming=False)
                      for soundfile in resourcepaths['misc']['applause']]
 
@@ -343,46 +337,47 @@ def fade_out(dt):
 # The colors of the squares in Triple N-Back mode are defined here.
 # Color 1 is used in Dual N-Back mode.
 def get_color(color):
-    if color in (4, 7) and cfg.BLACK_BACKGROUND:
-        return cfg['COLOR_%i_BLK' % color]
-    return cfg['COLOR_%i' % color]
+    if color in (4, 7) and config.cfg.BLACK_BACKGROUND:
+        return config.cfg['COLOR_%i_BLK' % color]
+    return config.cfg['COLOR_%i' % color]
 
 
 #Create the game window
 caption = []
-if CLINICAL_MODE:
+if param.CLINICAL_MODE:
     caption.append('BW-Clinical ')
 else:
     caption.append('Brain Workshop by AzZu ')
-caption.append(VERSION)
-if USER != 'default':
+caption.append(param.VERSION)
+if param.USER != 'default':
     caption.append(' - ')
     caption.append(USER)
-if cfg.WINDOW_FULLSCREEN:
+if config.cfg.WINDOW_FULLSCREEN:
     style = pyglet.window.Window.WINDOW_STYLE_BORDERLESS
 else:
     style = pyglet.window.Window.WINDOW_STYLE_DEFAULT
-     
+
+
 class MyWindow(pyglet.window.Window):
     def on_key_press(self, symbol, modifiers):
         pass
     def on_key_release(self, symbol, modifiers):
         pass
 
-window = MyWindow(cfg.WINDOW_WIDTH, cfg.WINDOW_HEIGHT, caption=''.join(caption), style=style, vsync=VSYNC)
+window = MyWindow(config.cfg.WINDOW_WIDTH, config.cfg.WINDOW_HEIGHT, caption=''.join(caption), style=style, vsync=param.VSYNC)
 #if DEBUG: 
 #    window.push_handlers(pyglet.window.event.WindowEventLogger())
-if sys.platform == 'darwin' and cfg.WINDOW_FULLSCREEN:
+if sys.platform == 'darwin' and config.cfg.WINDOW_FULLSCREEN:
     window.set_exclusive_keyboard()
 if sys.platform == 'linux2':
     window.set_icon(pyglet.image.load(resourcepaths['misc']['brain'][0]))
 
 # set the background color of the window
-if cfg.BLACK_BACKGROUND:
+if config.cfg.BLACK_BACKGROUND:
     glClearColor(0, 0, 0, 1)
 else:
     glClearColor(1, 1, 1, 1)
-if cfg.WINDOW_FULLSCREEN:
+if config.cfg.WINDOW_FULLSCREEN:
     window.maximize()
     window.set_mouse_visible(False)
     
@@ -400,8 +395,8 @@ class TextInputScreen:
         self.titletext = title
         self.text = text
         self.starttext = text
-        self.bgcolor = (255 * int(not cfg.BLACK_BACKGROUND), )*3
-        self.textcolor = (255 * int(cfg.BLACK_BACKGROUND), )*3 + (255, )
+        self.bgcolor = (255 * int(not config.cfg.BLACK_BACKGROUND), )*3
+        self.textcolor = (255 * int(config.cfg.BLACK_BACKGROUND), )*3 + (255, )
         self.batch = pyglet.graphics.Batch()
         self.title = pyglet.text.Label(title, font_size=self.titlesize,
             bold=True, color=self.textcolor, batch=self.batch,
@@ -423,7 +418,6 @@ class TextInputScreen:
         # to result in the keypress being interpreted as a text input, so we 
         # catch that later
         self.catch = catch
-        
     
     def on_draw(self):
         # the bugfix hack, which currently does not work
@@ -435,7 +429,6 @@ class TextInputScreen:
         window.clear()
         self.batch.draw()
         return pyglet.event.EVENT_HANDLED
-
     
     def on_key_press(self, k, mod):
         if k in (key.ESCAPE, key.RETURN, key.ENTER):
@@ -499,9 +492,9 @@ class Menu:
     def __init__(self, options, values=None, actions={}, names={}, title='', 
                  footnote = _('Esc: cancel     Space: modify option     Enter: apply'), 
                  choose_once=False, default=0):
-        self.bgcolor = (255 * int(not cfg.BLACK_BACKGROUND), )*3
-        self.textcolor = (255 * int(cfg.BLACK_BACKGROUND), )*3 + (255,)
-        self.markercolors = (0,0,255,0,255,0,255,0,0)#(255 * int(cfg.BLACK_BACKGROUND), )*3*3
+        self.bgcolor = (255 * int(not config.cfg.BLACK_BACKGROUND), )*3
+        self.textcolor = (255 * int(config.cfg.BLACK_BACKGROUND), )*3 + (255,)
+        self.markercolors = (0,0,255,0,255,0,255,0,0)#(255 * int(config.cfg.BLACK_BACKGROUND), )*3*3
         self.pagesize = min(len(options), (window.height*6/10) / (self.choicesize*3/2))
         if type(options) == dict:
             vals = options
@@ -686,7 +679,7 @@ class LanguageScreen(Menu):
     def __init__(self):
         self.languages = languages = [fn for fn in os.listdir(os.path.join('res', 'i18n')) if fn.lower().endswith('mo')]
         try:
-            default = languages.index(cfg.LANGUAGE + '.mo')
+            default = languages.index(config.cfg.LANGUAGE + '.mo')
         except:
             default = 0
         Menu.__init__(self, options=languages,
@@ -706,9 +699,9 @@ class OptionsScreen(Menu):
         """
         Sorta works.  Not yet useful, though.
         """        
-        options = cfg.keys()
+        options = config.cfg.keys()
         options.sort()
-        Menu.__init__(self, options=options, values=cfg, title=_('Configuration'))
+        Menu.__init__(self, options=options, values=config.cfg, title=_('Configuration'))
 
 
 class GameSelect(Menu):
@@ -739,19 +732,19 @@ class GameSelect(Menu):
         vals = dict([[op, None] for op in options])
         curmodes = mode.modalities[mode.mode]
         interference_options = [i / 8. for i in range(0, 9)]
-        if not cfg.DEFAULT_CHANCE_OF_INTERFERENCE in interference_options:
-            interference_options.append(cfg.DEFAULT_CHANCE_OF_INTERFERENCE)
+        if not config.cfg.DEFAULT_CHANCE_OF_INTERFERENCE in interference_options:
+            interference_options.append(config.cfg.DEFAULT_CHANCE_OF_INTERFERENCE)
         interference_options.sort()
-        if cfg.CHANCE_OF_INTERFERENCE in interference_options:
-            interference_default = interference_options.index(cfg.CHANCE_OF_INTERFERENCE)
+        if config.cfg.CHANCE_OF_INTERFERENCE in interference_options:
+            interference_default = interference_options.index(config.cfg.CHANCE_OF_INTERFERENCE)
         else:
             interference_default = 3
         vals['interference'] = PercentCycler(values=interference_options, default=interference_default)
         vals['combination'] = 'visvis' in curmodes
-        vals['variable'] = bool(cfg.VARIABLE_NBACK)
+        vals['variable'] = bool(config.cfg.VARIABLE_NBACK)
         vals['crab'] = bool(mode.flags[mode.mode]['crab'])
         vals['multi'] = Cycler(values=[1,2,3,4], default=mode.flags[mode.mode]['multi']-1)
-        vals['multimode'] = Cycler(values=['color', 'image'], default=cfg.MULTI_MODE)
+        vals['multimode'] = Cycler(values=['color', 'image'], default=config.cfg.MULTI_MODE)
         vals['selfpaced'] = bool(mode.flags[mode.mode]['selfpaced'])
         for m in modalities:
             vals[m] = m in curmodes
@@ -814,9 +807,9 @@ class GameSelect(Menu):
 
     def save(self):
         self.calc_mode()
-        cfg.VARIABLE_NBACK = self.values['variable']
-        cfg.MULTI_MODE = self.values['multimode'].value()
-        cfg.CHANCE_OF_INTERFERENCE = self.values['interference'].value()
+        config.cfg.VARIABLE_NBACK = self.values['variable']
+        config.cfg.MULTI_MODE = self.values['multimode'].value()
+        config.cfg.CHANCE_OF_INTERFERENCE = self.values['interference'].value()
         if self.newmode:
             mode.mode = self.newmode
         
@@ -879,17 +872,17 @@ class ImageSelect(Menu):
         imagesets = resourcepaths['sprites']
         self.new_sets = {}
         for image in imagesets:
-            self.new_sets[image] = image in cfg.IMAGE_SETS
+            self.new_sets[image] = image in config.cfg.IMAGE_SETS
         options = self.new_sets.keys()
         options.sort()
         vals = self.new_sets
         Menu.__init__(self, options, vals, title=_('Choose images to use for the Image n-back tasks.'))
 
     def close(self):
-        while cfg.IMAGE_SETS:
-            cfg.IMAGE_SETS.remove(cfg.IMAGE_SETS[0])
+        while config.cfg.IMAGE_SETS:
+            config.cfg.IMAGE_SETS.remove(config.cfg.IMAGE_SETS[0])
         for k,v in self.new_sets.items():
-            if v: cfg.IMAGE_SETS.append(k)
+            if v: config.cfg.IMAGE_SETS.append(k)
         Menu.close(self)
         update_all_labels()
 
@@ -908,20 +901,20 @@ class SoundSelect(Menu):
         self.new_sets = {}
         for audio in audiosets:
             if not audio == 'operations':
-                self.new_sets['1'+audio] = audio in cfg.AUDIO1_SETS
-                self.new_sets['2'+audio] = audio in cfg.AUDIO2_SETS
+                self.new_sets['1'+audio] = audio in config.cfg.AUDIO1_SETS
+                self.new_sets['2'+audio] = audio in config.cfg.AUDIO2_SETS
         for audio in audiosets:
             if not audio == 'operations':
-                self.new_sets['2'+audio] = audio in cfg.AUDIO2_SETS
+                self.new_sets['2'+audio] = audio in config.cfg.AUDIO2_SETS
         options = self.new_sets.keys()
         options.sort()
         options.insert(len(self.new_sets)/2, "Blank line") # Menu.update_labels and .select will ignore this
         options.append("Blank line")
-        options.extend(['cfg.CHANNEL_AUDIO1', 'cfg.CHANNEL_AUDIO2'])
+        options.extend(['config.cfg.CHANNEL_AUDIO1', 'config.cfg.CHANNEL_AUDIO2'])
         lcr = ['left', 'right', 'center']
         vals = self.new_sets
-        vals['cfg.CHANNEL_AUDIO1'] = Cycler(lcr, default=lcr.index(cfg.CHANNEL_AUDIO1))
-        vals['cfg.CHANNEL_AUDIO2'] = Cycler(lcr, default=lcr.index(cfg.CHANNEL_AUDIO2))
+        vals['config.cfg.CHANNEL_AUDIO1'] = Cycler(lcr, default=lcr.index(config.cfg.CHANNEL_AUDIO1))
+        vals['config.cfg.CHANNEL_AUDIO2'] = Cycler(lcr, default=lcr.index(config.cfg.CHANNEL_AUDIO2))
         names = {}
         for op in options:
             if op.startswith('1') or op.startswith('2'):
@@ -931,13 +924,13 @@ class SoundSelect(Menu):
         Menu.__init__(self, options, vals, {}, names, title=_('Choose sound sets to Sound n-back tasks.'))
         
     def close(self):
-        cfg.AUDIO1_SETS = []
-        cfg.AUDIO2_SETS = []
+        config.cfg.AUDIO1_SETS = []
+        config.cfg.AUDIO2_SETS = []
         for k,v in self.new_sets.items():
-            if   k.startswith('1') and v: cfg.AUDIO1_SETS.append(k[1:])
-            elif k.startswith('2') and v: cfg.AUDIO2_SETS.append(k[1:])
-        cfg.CHANNEL_AUDIO1  = self.values['cfg.CHANNEL_AUDIO1'].value()
-        cfg.CHANNEL_AUDIO2 = self.values['cfg.CHANNEL_AUDIO2'].value()
+            if   k.startswith('1') and v: config.cfg.AUDIO1_SETS.append(k[1:])
+            elif k.startswith('2') and v: config.cfg.AUDIO2_SETS.append(k[1:])
+        config.cfg.CHANNEL_AUDIO1  = self.values['config.cfg.CHANNEL_AUDIO1'].value()
+        config.cfg.CHANNEL_AUDIO2 = self.values['config.cfg.CHANNEL_AUDIO2'].value()
         Menu.close(self)
         update_all_labels()
         
@@ -961,17 +954,17 @@ class SoundSelect(Menu):
 # the field is the grid on which the squares appear
 class Field:
     def __init__(self):
-        if cfg.FIELD_EXPAND:
+        if config.cfg.FIELD_EXPAND:
             self.size = int(window.height * 0.85)
         else: self.size = int(window.height * 0.625)
-        if cfg.BLACK_BACKGROUND:
+        if config.cfg.BLACK_BACKGROUND:
             self.color = (64, 64, 64)
         else: 
             self.color = (192, 192, 192)
         self.color4 = self.color * 4
         self.color8 = self.color * 8
         self.center_x = window.width // 2
-        if cfg.FIELD_EXPAND:
+        if config.cfg.FIELD_EXPAND:
             self.center_y = window.height // 2
         else: self.center_y = window.height // 2 + 20
         self.x1 = self.center_x - self.size/2
@@ -984,7 +977,7 @@ class Field:
         self.y4 = self.center_y + self.size/6
         
         # add the inside lines
-        if cfg.GRIDLINES:
+        if config.cfg.GRIDLINES:
             self.v_lines = batch.add(8, GL_LINES, None, ('v2i', (
                 self.x1, self.y3,
                 self.x2, self.y3,
@@ -1002,9 +995,9 @@ class Field:
                 
     # draw the target cross in the center
     def crosshair_update(self):
-        if not cfg.CROSSHAIRS:
+        if not config.cfg.CROSSHAIRS:
             return
-        if (not mode.paused) and 'position1' in mode.modalities[mode.mode] and not cfg.VARIABLE_NBACK: 
+        if (not mode.paused) and 'position1' in mode.modalities[mode.mode] and not config.cfg.VARIABLE_NBACK:
             if self.crosshair_visible: return
             else:
                 self.v_crosshair = batch.add(4, GL_LINES, None, ('v2i', (
@@ -1037,9 +1030,9 @@ class Visual:
                               for path in resourcepaths['misc']['colored-squares']]
         self.spr_square_size = self.spr_square[0].width
     
-        if cfg.ANIMATE_SQUARES:
+        if config.cfg.ANIMATE_SQUARES:
             self.size_factor = 0.9375
-        elif cfg.OLD_STYLE_SQUARES:
+        elif config.cfg.OLD_STYLE_SQUARES:
             self.size_factor = 0.9375
         else:
             self.size_factor = 1.0
@@ -1050,9 +1043,9 @@ class Visual:
         
     def load_set(self, index=None):
         if type(index) == int:
-            index = cfg.IMAGE_SETS[index]
+            index = config.cfg.IMAGE_SETS[index]
         if index == None:
-            index = random.choice(cfg.IMAGE_SETS)
+            index = random.choice(config.cfg.IMAGE_SETS)
         if hasattr(self, 'image_set_index') and index == self.image_set_index: 
             return
         self.image_set_index = index
@@ -1078,14 +1071,14 @@ class Visual:
         self.center_y = field.center_y + (field.size / 3)*((position/3+1)%3 - 1) + (field.size / 3 - self.size)/2
         
         if self.vis == 0:
-            if cfg.OLD_STYLE_SQUARES:
+            if config.cfg.OLD_STYLE_SQUARES:
                 lx = self.center_x - self.size // 2 + 2
                 rx = self.center_x + self.size // 2 - 2
                 by = self.center_y - self.size // 2 + 2
                 ty = self.center_y + self.size // 2 - 2
                 cr = self.size // 5
                 
-                if cfg.OLD_STYLE_SHARP_CORNERS:
+                if config.cfg.OLD_STYLE_SHARP_CORNERS:
                     self.square = batch.add(4, GL_POLYGON, None, ('v2i', (
                         lx, by,
                         rx, by,
@@ -1133,7 +1126,7 @@ class Visual:
             self.label.color = self.color
         elif 'image' in mode.modalities[mode.mode] \
               or 'vis1' in mode.modalities[mode.mode] \
-              or (mode.flags[mode.mode]['multi'] > 1 and cfg.MULTI_MODE == 'image'): # display a pictogram
+              or (mode.flags[mode.mode]['multi'] > 1 and config.cfg.MULTI_MODE == 'image'): # display a pictogram
             self.square = self.images[vis-1]
             self.square.opacity = 255
             self.square.color = self.color[:3]
@@ -1166,7 +1159,7 @@ class Visual:
     def animate_square(self, dt):
         self.age += dt
         if mode.paused: return
-        if not cfg.ANIMATE_SQUARES: return
+        if not config.cfg.ANIMATE_SQUARES: return
         
         # factors which affect animation
         scale_addition = dt / 8
@@ -1191,11 +1184,11 @@ class Visual:
             self.variable_label.text = ''
             if 'image' in mode.modalities[mode.mode] \
                   or 'vis1' in mode.modalities[mode.mode] \
-                  or (mode.flags[mode.mode]['multi'] > 1 and cfg.MULTI_MODE == 'image'): # hide pictogram
+                  or (mode.flags[mode.mode]['multi'] > 1 and config.cfg.MULTI_MODE == 'image'): # hide pictogram
                 self.square.batch = None
                 pyglet.clock.unschedule(self.animate_square)
             elif self.vis == 0:
-                if cfg.OLD_STYLE_SQUARES:
+                if config.cfg.OLD_STYLE_SQUARES:
                     self.square.delete()
                 else:
                     self.square.batch = None
@@ -1209,18 +1202,18 @@ class Circles:
         self.start_x = 30
         self.radius = 8
         self.distance = 20
-        if cfg.BLACK_BACKGROUND:
+        if config.cfg.BLACK_BACKGROUND:
             self.not_activated = [64, 64, 64, 255]
         else:
             self.not_activated = [192, 192, 192, 255]
         self.activated = [64, 64, 255, 255]
-        if cfg.BLACK_BACKGROUND:
+        if config.cfg.BLACK_BACKGROUND:
             self.invisible = [0, 0, 0, 0]
         else:
             self.invisible = [255, 255, 255, 0]
         
         self.circle = []
-        for index in range(0, cfg.THRESHOLD_FALLBACK_SESSIONS - 1):
+        for index in range(0, config.cfg.THRESHOLD_FALLBACK_SESSIONS - 1):
             self.circle.append(batch.add(4, GL_QUADS, None, ('v2i', (
                 self.start_x + self.distance * index - self.radius,
                 self.y + self.radius,
@@ -1235,11 +1228,11 @@ class Circles:
         self.update()
             
     def update(self):
-        if mode.manual or mode.started or cfg.JAEGGI_MODE:
-            for i in range(0, cfg.THRESHOLD_FALLBACK_SESSIONS - 1):
+        if mode.manual or mode.started or config.cfg.JAEGGI_MODE:
+            for i in range(0, config.cfg.THRESHOLD_FALLBACK_SESSIONS - 1):
                 self.circle[i].colors = (self.invisible * 4)
         else:
-            for i in range(0, cfg.THRESHOLD_FALLBACK_SESSIONS - 1):
+            for i in range(0, config.cfg.THRESHOLD_FALLBACK_SESSIONS - 1):
                 self.circle[i].colors = (self.not_activated * 4)
             for i in range(0, mode.progress):
                 self.circle[i].colors = (self.activated * 4)
@@ -1271,7 +1264,7 @@ class GameModeLabel:
         self.label = pyglet.text.Label(
             '',
             font_size=16,
-            color=cfg.COLOR_TEXT,
+            color=config.cfg.COLOR_TEXT,
             x=window.width//2, y=window.height - 20,
             anchor_x='center', anchor_y='center', batch=batch)
         self.update()
@@ -1280,12 +1273,12 @@ class GameModeLabel:
             self.label.text = ''
         else:
             str_list = []
-            if cfg.JAEGGI_MODE and not CLINICAL_MODE:
+            if config.cfg.JAEGGI_MODE and not param.CLINICAL_MODE:
                 str_list.append(_('Jaeggi mode: '))
             if mode.manual:
                 str_list.append(_('Manual mode: '))
             str_list.append(mode.long_mode_names[mode.mode] + ' ')
-            if cfg.VARIABLE_NBACK:
+            if config.cfg.VARIABLE_NBACK:
                 str_list.append(_('V. '))
             str_list.append(str(mode.back))
             str_list.append(_('-Back'))
@@ -1297,7 +1290,7 @@ class GameModeLabel:
         self.update()
         pyglet.clock.schedule_once(gameModeLabel.unflash, 0.5)
     def unflash(self, dt):
-        self.label.color = cfg.COLOR_TEXT
+        self.label.color = config.cfg.COLOR_TEXT
         self.update()
 
 class JaeggiWarningLabel:
@@ -1323,7 +1316,7 @@ class KeysListLabel:
             '',
             multiline = True, width = 300, bold = False,
             font_size=9,
-            color=cfg.COLOR_TEXT,
+            color=config.cfg.COLOR_TEXT,
             x = 10,
             anchor_x='left', anchor_y='top', batch=batch)
         self.update()
@@ -1337,15 +1330,15 @@ class KeysListLabel:
                 str_list.append(_('F8: Hide / Reveal Text\n'))
                 str_list.append('\n')                
                 str_list.append(_('ESC: Cancel Session\n'))
-        elif CLINICAL_MODE:
+        elif param.CLINICAL_MODE:
             self.label.y = window.height - 10
             str_list.append(_('ESC: Exit'))
         else:
-            if mode.manual or cfg.JAEGGI_MODE:
+            if mode.manual or config.cfg.JAEGGI_MODE:
                 self.label.y = window.height - 10
             else:
                 self.label.y = window.height - 40
-            if 'morse' in cfg.AUDIO1_SETS or 'morse' in cfg.AUDIO2_SETS:
+            if 'morse' in config.cfg.AUDIO1_SETS or 'morse' in config.cfg.AUDIO2_SETS:
                 str_list.append(_('J: Morse Code Reference\n'))
                 str_list.append('\n')
             str_list.append(_('H: Help / Tutorial\n'))
@@ -1373,7 +1366,7 @@ class KeysListLabel:
             str_list.append(_('G: Daily Progress Graph\n'))
             str_list.append('\n')
             str_list.append(_('W: Brain Workshop Web Site\n'))
-            if cfg.WINDOW_FULLSCREEN:
+            if config.cfg.WINDOW_FULLSCREEN:
                 str_list.append(_('E: Saccadic Eye Exercise\n'))
             str_list.append('\n')
             str_list.append(_('ESC: Exit\n'))
@@ -1385,12 +1378,12 @@ class TitleMessageLabel:
         self.label = pyglet.text.Label(
             _('Brain Workshop'),
             #multiline = True, width = window.width // 2,
-            font_size = 32, bold = True, color = cfg.COLOR_TEXT,
+            font_size = 32, bold = True, color = config.cfg.COLOR_TEXT,
             x = window.width // 2, y = window.height - 35,
             anchor_x = 'center', anchor_y = 'center')
         self.label2 = pyglet.text.Label(
-            _('Version ') + str(VERSION),
-            font_size = 14, bold = False, color = cfg.COLOR_TEXT,
+            _('Version ') + str(param.VERSION),
+            font_size = 14, bold = False, color = config.cfg.COLOR_TEXT,
             x = window.width // 2, y = window.height - 75,
             anchor_x = 'center', anchor_y = 'center')
         
@@ -1401,15 +1394,15 @@ class TitleMessageLabel:
 class TitleKeysLabel:
     def __init__(self):
         str_list = []
-        if not (cfg.JAEGGI_MODE or CLINICAL_MODE):
+        if not (config.cfg.JAEGGI_MODE or param.CLINICAL_MODE):
             str_list.append(_('C: Choose Game Mode\n'))
             str_list.append(_('S: Choose Sounds\n'))
             str_list.append(_('I: Choose Images\n'))
-        if not CLINICAL_MODE:
+        if not param.CLINICAL_MODE:
             str_list.append(_('U: Choose User\n'))
             str_list.append(_('G: Daily Progress Graph\n'))
         str_list.append(_('H: Help / Tutorial\n'))
-        if not CLINICAL_MODE:
+        if not param.CLINICAL_MODE:
             str_list.append(_('D: Donate\n'))
             str_list.append(_('F: Go to Forum / Mailing List\n'))
             str_list.append(_('O: Edit configuration file'))
@@ -1417,7 +1410,7 @@ class TitleKeysLabel:
         self.keys = pyglet.text.Label(
             ''.join(str_list),
             multiline = True, width = 260,
-            font_size = 12, bold = True, color = cfg.COLOR_TEXT,
+            font_size = 12, bold = True, color = config.cfg.COLOR_TEXT,
             x = window.width // 2, y = 230,
             anchor_x = 'center', anchor_y = 'top')
         
@@ -1437,7 +1430,7 @@ class LogoUpperLabel:
         self.label = pyglet.text.Label(
             'Brain', # I think we shouldn't translate the program name.  Yes?
             font_size=11, bold = True,
-            color=cfg.COLOR_TEXT,
+            color=config.cfg.COLOR_TEXT,
             x=field.center_x, y=field.center_y + 30,
             anchor_x='center', anchor_y='center')
     def draw(self):
@@ -1449,7 +1442,7 @@ class LogoLowerLabel:
         self.label = pyglet.text.Label(
             'Workshop',
             font_size=11, bold = True,
-            color=cfg.COLOR_TEXT,
+            color=config.cfg.COLOR_TEXT,
             x=field.center_x, y=field.center_y - 27,
             anchor_x='center', anchor_y='center')
     def draw(self):
@@ -1483,7 +1476,7 @@ class CongratsLabel:
         self.update()
     def update(self, show=False, advance=False, fallback=False, awesome=False, great=False, good=False, perfect = False):
         str_list = []
-        if show and not CLINICAL_MODE and cfg.USE_SESSION_FEEDBACK:
+        if show and not param.CLINICAL_MODE and config.cfg.USE_SESSION_FEEDBACK:
             if perfect: str_list.append(_('Perfect score! '))
             elif awesome: str_list.append(_('Awesome score! '))
             elif great: str_list.append(_('Great score! '))
@@ -1505,7 +1498,7 @@ class FeedbackLabel:
         total should be the total number of feedback labels for this mode.
         """
         self.modality = modality
-        self.letter = key.symbol_string(cfg['KEY_%s' % modality.upper()])
+        self.letter = key.symbol_string(config.cfg['KEY_%s' % modality.upper()])
         if self.letter == 'SEMICOLON': 
             self.letter = ';'      
         modalityname = modality
@@ -1516,7 +1509,7 @@ class FeedbackLabel:
         if mode.flags[mode.mode]['multi'] == 1 and modalityname == 'position1':
             modalityname = 'position'
             
-	if total == 2 and not cfg.JAEGGI_MODE and cfg.ENABLE_MOUSE:
+	if total == 2 and not config.cfg.JAEGGI_MODE and config.cfg.ENABLE_MOUSE:
 	    if pos == 0:
 		self.mousetext = "Left-click or"
 	    if pos == 1:
@@ -1545,8 +1538,8 @@ class FeedbackLabel:
         # draw an icon next to the label for multi-stim mode
         if mode.flags[mode.mode]['multi'] > 1 and self.modality[-1].isdigit():
             self.id = int(modality[-1])
-            if cfg.MULTI_MODE == 'color':
-                self.icon = pyglet.sprite.Sprite(visuals[self.id-1].spr_square[cfg.VISUAL_COLORS[self.id-1]-1].image)
+            if config.cfg.MULTI_MODE == 'color':
+                self.icon = pyglet.sprite.Sprite(visuals[self.id-1].spr_square[config.cfg.VISUAL_COLORS[self.id-1]-1].image)
                 self.icon.scale = .125 * visuals[self.id-1].size / visuals[self.id-1].image_set_size
                 self.icon.y = 22    
                 self.icon.x = x - 15
@@ -1576,22 +1569,22 @@ class FeedbackLabel:
             self.label.text = self.text
         else:
             self.label.text = ''
-        if cfg.SHOW_FEEDBACK and mode.inputs[self.modality]:
+        if config.cfg.SHOW_FEEDBACK and mode.inputs[self.modality]:
             result = check_match(self.modality)
             #self.label.bold = True
             if result == 'correct':
-                self.label.color = cfg.COLOR_LABEL_CORRECT
+                self.label.color = config.cfg.COLOR_LABEL_CORRECT
             elif result == 'unknown':
-                self.label.color = cfg.COLOR_LABEL_OOPS
+                self.label.color = config.cfg.COLOR_LABEL_OOPS
             elif result == 'incorrect':
-                self.label.color = cfg.COLOR_LABEL_INCORRECT
-        elif cfg.SHOW_FEEDBACK and (not mode.inputs['audiovis']) and mode.show_missed:
+                self.label.color = config.cfg.COLOR_LABEL_INCORRECT
+        elif config.cfg.SHOW_FEEDBACK and (not mode.inputs['audiovis']) and mode.show_missed:
             result = check_match(self.modality, check_missed=True)
             if result == 'missed':
-                self.label.color = cfg.COLOR_LABEL_OOPS
+                self.label.color = config.cfg.COLOR_LABEL_OOPS
                 #self.label.bold = True
         else:
-            self.label.color = cfg.COLOR_TEXT
+            self.label.color = config.cfg.COLOR_TEXT
             self.label.bold = False
 
     def delete(self):
@@ -1636,16 +1629,16 @@ class ArithmeticAnswerLabel:
         str_list.append(str(self.parse_answer()))
         self.label.text = ''.join(str_list)
         
-        if cfg.SHOW_FEEDBACK and mode.show_missed:
+        if config.cfg.SHOW_FEEDBACK and mode.show_missed:
             result = check_match('arithmetic')
             if result == _('correct'):
-                self.label.color = cfg.COLOR_LABEL_CORRECT
+                self.label.color = config.cfg.COLOR_LABEL_CORRECT
                 self.label.bold = True
             if result == _('incorrect'):
-                self.label.color = cfg.COLOR_LABEL_INCORRECT
+                self.label.color = config.cfg.COLOR_LABEL_INCORRECT
                 self.label.bold = True
         else:
-            self.label.color = cfg.COLOR_TEXT
+            self.label.color = config.cfg.COLOR_TEXT
             self.label.bold = False
         
     def parse_answer(self):
@@ -1685,12 +1678,12 @@ class SessionInfoLabel:
             '',
             multiline = True, width = 128,
             font_size=11,
-            color=cfg.COLOR_TEXT,
+            color=config.cfg.COLOR_TEXT,
             x=20, y=field.center_y - 145,
             anchor_x='left', anchor_y='top', batch=batch)
         self.update()
     def update(self):
-        if mode.started or CLINICAL_MODE:
+        if mode.started or param.CLINICAL_MODE:
             self.label.text = ''
         else:
             self.label.text = _('Session:\n%1.2f sec/trial\n%i+%i trials\n%i seconds') % \
@@ -1714,16 +1707,16 @@ class ThresholdLabel:
             '',
             multiline = True, width = 155,
             font_size=11,
-            color=cfg.COLOR_TEXT,
+            color=config.cfg.COLOR_TEXT,
             x=window.width - 20, y=field.center_y - 145,
             anchor_x='right', anchor_y='top', batch=batch)
         self.update()
     def update(self):
-        if mode.started or mode.manual or CLINICAL_MODE:
+        if mode.started or mode.manual or param.CLINICAL_MODE:
             self.label.text = ''
         else:
             self.label.text = _(u'Thresholds:\nRaise level: \u2265 %i%%\nLower level: < %i%%') % \
-            (get_threshold_advance(), get_threshold_fallback())   # '\u2265' = '>='
+            (config.get_threshold_advance(), config.get_threshold_fallback())   # '\u2265' = '>='
         
 # this controls the "press space to begin session #" text.
 class SpaceLabel:
@@ -1746,7 +1739,7 @@ class SpaceLabel:
             str_list.append(': ')
             str_list.append(mode.long_mode_names[mode.mode] + ' ')
                 
-            if cfg.VARIABLE_NBACK:
+            if config.cfg.VARIABLE_NBACK:
                 str_list.append(_('V. '))
             str_list.append(str(mode.back))
             str_list.append(_('-Back'))
@@ -1757,14 +1750,14 @@ def check_match(input_type, check_missed = False):
     back_data = ''
     operation = 0
     # FIXME:  I'm not going to think about whether crab_back will work with 
-    # cfg.VARIABLE_NBACK yet, since I don't actually understand how the latter works
+    # config.cfg.VARIABLE_NBACK yet, since I don't actually understand how the latter works
     
     if mode.flags[mode.mode]['crab'] == 1:
         back = 1 + 2*((mode.trial_number-1) % mode.back)
     else:
         back = mode.back
     
-    if cfg.VARIABLE_NBACK:
+    if config.cfg.VARIABLE_NBACK:
         nback_trial = mode.trial_number - mode.variable_list[mode.trial_number - back - 1] - 1
     else:
         nback_trial = mode.trial_number - back - 1
@@ -1814,7 +1807,7 @@ class AnalysisLabel:
         self.label = pyglet.text.Label(
             '',
             font_size=14,
-            color=cfg.COLOR_TEXT,
+            color=config.cfg.COLOR_TEXT,
             x=window.width//2, y=92,
             anchor_x='center', anchor_y='center', batch=batch)
         self.update()
@@ -1843,7 +1836,7 @@ class AnalysisLabel:
                     back = 1 + 2*(x % mode.back)
                 else:
                     back = mode.back
-                if cfg.VARIABLE_NBACK:
+                if config.cfg.VARIABLE_NBACK:
                     back = mode.variable_list[x - back]
                                 
                 # data is a dictionary of lists.
@@ -1851,7 +1844,7 @@ class AnalysisLabel:
                            'vis1', 'vis2', 'vis3', 'vis4', 'audio', 'audio2', 'color', 'image']:
                     rights[mod] += int((data[mod][x] == data[mod][x-back]) and data[mod+'_input'][x])
                     wrongs[mod] += int((data[mod][x] == data[mod][x-back])  ^  data[mod+'_input'][x]) # ^ is XOR
-                    if cfg.JAEGGI_SCORING: 
+                    if config.cfg.JAEGGI_SCORING:
                         rights[mod] += int(data[mod][x] != data[mod][x-back]  and not data[mod+'_input'][x])
                 
                 if mod in ['visvis', 'visaudio', 'audiovis']:
@@ -1859,7 +1852,7 @@ class AnalysisLabel:
                     modthn = mod.endswith('vis')   and 'vis' or 'audio' # of 'vis' if mod.startswith('vis') else 'audio'
                     rights[mod] += int((data[modnow][x] == data[modthn][x-back]) and data[mod+'_input'][x])
                     wrongs[mod] += int((data[modnow][x] == data[modthn][x-back])  ^  data[mod+'_input'][x]) 
-                    if cfg.JAEGGI_SCORING: 
+                    if config.cfg.JAEGGI_SCORING:
                         rights[mod] += int(data[modnow][x] != data[modthn][x-back]  and not data[mod+'_input'][x])
                     
                 if mod in ['arithmetic']:
@@ -1869,10 +1862,10 @@ class AnalysisLabel:
                     wrongs[mod] += int(answer != Decimal(data[mod+'_input'][x])) 
         
         str_list = []
-        if not CLINICAL_MODE:
+        if not param.CLINICAL_MODE:
             str_list += [_('Correct-Errors:   ')]
             sep = '   '
-            keys = dict([(mod, cfg['KEY_%s' % mod.upper()]) for mod in poss_mods[:-1]]) # exclude 'arithmetic'
+            keys = dict([(mod, config.cfg['KEY_%s' % mod.upper()]) for mod in poss_mods[:-1]]) # exclude 'arithmetic'
             
             for mod in poss_mods[:-1]: # exclude 'arithmetic'
                 if mod in mods:
@@ -1893,10 +1886,10 @@ class AnalysisLabel:
         for mod in mods:
             category_percents[mod] = calc_percent(rights[mod], wrongs[mod])
 
-        if cfg.JAEGGI_SCORING:
+        if config.cfg.JAEGGI_SCORING:
             percent = min([category_percents[m] for m in mode.modalities[mode.mode]])
-            #percent = min(category_percents['position1'], category_percents['audio']) # cfg.JAEGGI_MODE forces mode.mode==2
-            if not CLINICAL_MODE:
+            #percent = min(category_percents['position1'], category_percents['audio']) # config.cfg.JAEGGI_MODE forces mode.mode==2
+            if not param.CLINICAL_MODE:
                 str_list += [_('Lowest score: %i%%') % percent]
         else:
             percent = calc_percent(right, wrong)
@@ -1913,7 +1906,7 @@ class ChartTitleLabel:
             '',
             font_size = 10,
             bold = True,
-            color = cfg.COLOR_TEXT,
+            color = config.cfg.COLOR_TEXT,
             x = window.width - 10,
             y = window.height - 85,
             anchor_x = 'right',
@@ -1968,9 +1961,9 @@ class ChartLabel:
             if x < 0: continue
             manual = stats.history[x][4]
             color = self.color_normal
-            if not manual and stats.history[x][3] >= get_threshold_advance():
+            if not manual and stats.history[x][3] >= config.get_threshold_advance():
                 color = self.color_advance
-            elif not manual and stats.history[x][3] < get_threshold_fallback():
+            elif not manual and stats.history[x][3] < config.get_threshold_fallback():
                 color = self.color_fallback
             self.column1[index].color = color
             self.column2[index].color = color
@@ -1989,12 +1982,12 @@ class AverageLabel:
         self.label = pyglet.text.Label(
             '',
             font_size=10, bold=False,
-            color=cfg.COLOR_TEXT,
+            color=config.cfg.COLOR_TEXT,
             x=window.width - 10, y=window.height-55,
             anchor_x='right', anchor_y='top', batch=batch)
         self.update()
     def update(self):
-        if mode.started or CLINICAL_MODE:
+        if mode.started or param.CLINICAL_MODE:
             self.label.text = ''
         else:
             sessions = [sess for sess in stats.history if sess[1] == mode.mode][-20:]
@@ -2010,7 +2003,7 @@ class TodayLabel:
         self.labelTitle = pyglet.text.Label(
             '',
 	    font_size = 9,
-	    color = cfg.COLOR_TEXT,
+	    color = config.cfg.COLOR_TEXT,
             x=window.width, y=window.height-5,
             anchor_x='right', anchor_y='top',width=280, multiline=True, batch=batch)
         self.update()
@@ -2020,7 +2013,7 @@ class TodayLabel:
         else:
             total_trials = sum([mode.num_trials + mode.num_trials_factor * \
              his[2] ** mode.num_trials_exponent for his in stats.history])
-            total_time = mode.ticks_per_trial * TICK_DURATION * total_trials
+            total_time = mode.ticks_per_trial * param.TICK_DURATION * total_trials
             
             self.labelTitle.text = _("%i min %i sec done today in %i sessions\
 			    %i min %i sec done in last 24 hours in %i sessions" % (stats.time_today//60, stats.time_today%60, stats.sessions_today, stats.time_thours//60, stats.time_thours%60, stats.sessions_thours))
@@ -2030,7 +2023,7 @@ class TrialsRemainingLabel:
         self.label = pyglet.text.Label(
             '',
             font_size=12, bold = True,
-            color=cfg.COLOR_TEXT,
+            color=config.cfg.COLOR_TEXT,
             x=window.width - 10, y=window.height-5,
             anchor_x='right', anchor_y='top', batch=batch)
         self.update()
@@ -2049,7 +2042,7 @@ class Saccadic:
     
     def tick(self, dt):
         self.counter += 1
-        if self.counter == cfg.SACCADIC_REPETITIONS:
+        if self.counter == config.cfg.SACCADIC_REPETITIONS:
             self.stop()
         elif self.position == 'left':
             self.position = 'right'
@@ -2060,7 +2053,7 @@ class Saccadic:
         self.position = 'left'
         mode.saccadic = True
         self.counter = 0
-        pyglet.clock.schedule_interval(saccadic.tick, cfg.SACCADIC_DELAY)
+        pyglet.clock.schedule_interval(saccadic.tick, config.cfg.SACCADIC_DELAY)
 
     def stop(self):
         elapsed_time = time.time() - self.start_time
@@ -2158,7 +2151,7 @@ Press SPACE to continue, or press D to donate now.
         self.batch = pyglet.graphics.Batch()
         self.label = pyglet.text.Label(self.text, 
                             font_name='Times New Roman',
-                            color=cfg.COLOR_TEXT,
+                            color=config.cfg.COLOR_TEXT,
                             batch=self.batch,
                             multiline=True,
                             width=(4*window.width)/5,
@@ -2176,7 +2169,7 @@ Press SPACE to continue, or press D to donate now.
         return pyglet.event.EVENT_HANDLED
     
     def select(self):
-        webbrowser.open_new_tab(WEB_DONATE)
+        webbrowser.open_new_tab(param.WEB_DONATE)
         self.close()
         
     def close(self):
@@ -2206,13 +2199,13 @@ class Stats:
         
     def parse_statsfile(self):
         self.clear()
-        if os.path.isfile(os.path.join(get_data_dir(), cfg.STATSFILE)):
+        if os.path.isfile(os.path.join(get_data_dir(), config.cfg.STATSFILE)):
             try:
                 #last_session = []
                 #last_session_number = 0
                 last_mode = 0
                 last_back = 0
-                statsfile_path = os.path.join(get_data_dir(), cfg.STATSFILE)
+                statsfile_path = os.path.join(get_data_dir(), config.cfg.STATSFILE)
                 statsfile = open(statsfile_path, 'r')
                 is_today = False
                 is_thours = False
@@ -2230,10 +2223,10 @@ class Stats:
                     thour = datetime.datetime.today().hour
                     tmin = datetime.datetime.today().minute
                     tsec = datetime.datetime.today().second
-                    if int(strftime('%H')) < cfg.ROLLOVER_HOUR:
-                        if datestamp == today or (datestamp == yesterday and hour >= cfg.ROLLOVER_HOUR):
+                    if int(strftime('%H')) < config.cfg.ROLLOVER_HOUR:
+                        if datestamp == today or (datestamp == yesterday and hour >= config.cfg.ROLLOVER_HOUR):
                             is_today = True
-                    elif datestamp == today and hour >= cfg.ROLLOVER_HOUR:
+                    elif datestamp == today and hour >= config.cfg.ROLLOVER_HOUR:
                         is_today = True
                     if datestamp == today or (datestamp == yesterday and (hour > thour or (hour == thour and (mins > tmin or (mins == tmin and sec > tsec))))):
                         is_thours = True
@@ -2262,42 +2255,42 @@ class Stats:
                         stats.sessions_today += 1
                         self.time_today += sesstime
                         self.history.append([newsession_number, newmode, newback, newpercent, newmanual])
-                    #if not newmanual and (is_today or cfg.RESET_LEVEL):
+                    #if not newmanual and (is_today or config.cfg.RESET_LEVEL):
                     #    last_session = self.full_history[-1]
                 statsfile.close()
                 self.retrieve_progress()
                 
             except:
                 quit_with_error(_('Error parsing stats file\n%s') %
-                                os.path.join(get_data_dir(), cfg.STATSFILE),
+                                os.path.join(get_data_dir(), config.cfg.STATSFILE),
                                 _('\nPlease fix, delete or rename the stats file.'),
                                 quit=False)
     
     def retrieve_progress(self):
-        if cfg.RESET_LEVEL:
+        if config.cfg.RESET_LEVEL:
             sessions = [s for s in self.history if s[1] == mode.mode]
         else:
             sessions = [s for s in self.full_history if s[1] == mode.mode]
-        mode.enforce_standard_mode(cfg)
+        mode.enforce_standard_mode()
         if sessions:
             ls = sessions[-1]
             mode.back = ls[2]
-            if ls[3] >= get_threshold_advance():
+            if ls[3] >= config.get_threshold_advance():
                 mode.back += 1
             mode.session_number = ls[0]
             mode.progress = 0
             for s in sessions:
-                if s[2] == mode.back and s[3] < get_threshold_fallback():
+                if s[2] == mode.back and s[3] < config.get_threshold_fallback():
                     mode.progress += 1
                 elif s[2] != mode.back:
                     mode.progress = 0
-            if mode.progress >= cfg.THRESHOLD_FALLBACK_SESSIONS:
+            if mode.progress >= config.cfg.THRESHOLD_FALLBACK_SESSIONS:
                 mode.progress = 0
                 mode.back -= 1
                 if mode.back < 1:
                     mode.back = 1
         else: # no sessions today for this user and this mode
-            mode.back = default_nback_mode(mode.mode, cfg)
+            mode.back = default_nback_mode(mode.mode)
         mode.num_trials_total = mode.num_trials + mode.num_trials_factor * mode.back ** mode.num_trials_exponent
 
     def initialize_session(self):
@@ -2370,9 +2363,9 @@ class Stats:
             
 
     def log_saccadic(self, start_time, elapsed_time, counter):
-        if ATTEMPT_TO_SAVE_STATS and cfg.SACCADIC_LOGGING:
+        if param.ATTEMPT_TO_SAVE_STATS and config.cfg.SACCADIC_LOGGING:
             try:
-                statsfile_path = os.path.join(get_data_dir(), cfg.STATSFILE)
+                statsfile_path = os.path.join(get_data_dir(), config.cfg.STATSFILE)
                 statsfile = open(statsfile_path, 'a')
                 statsfile.write("# Saccadic session at %s for %i seconds and %i saccades\n" % 
                                 (strftime("%Y-%m-%d %H:%M:%S", time.localtime(start_time)),
@@ -2387,10 +2380,10 @@ class Stats:
         global applauseplayer
         self.history.append([mode.session_number, mode.mode, mode.back, percent, mode.manual])
         
-        if ATTEMPT_TO_SAVE_STATS:
+        if param.ATTEMPT_TO_SAVE_STATS:
             try:
-                sep = STATS_SEPARATOR
-                statsfile_path = os.path.join(get_data_dir(), cfg.STATSFILE)
+                sep = param.STATS_SEPARATOR
+                statsfile_path = os.path.join(get_data_dir(), config.cfg.STATSFILE)
                 statsfile = open(statsfile_path, 'a')
                 outlist = [strftime("%Y-%m-%d %H:%M:%S"),
                            mode.short_name(),
@@ -2417,13 +2410,13 @@ class Stats:
                            str(category_percents['vis2']),
                            str(category_percents['vis3']),
                            str(category_percents['vis4']),
-                           str(mode.ticks_per_trial * TICK_DURATION * mode.num_trials_total),
+                           str(mode.ticks_per_trial * param.TICK_DURATION * mode.num_trials_total),
                            str(0),
                            ]
                 statsfile.write(sep.join(outlist)) # adds sep between each element
                 statsfile.write('\n')  # but we don't want a sep before '\n'
                 statsfile.close()
-                if CLINICAL_MODE:
+                if param.CLINICAL_MODE:
                     picklefile = open(os.path.join(get_data_dir(), STATS_BINARY), 'ab')
                     pickle.dump([strftime("%Y-%m-%d %H:%M:%S"), mode.short_name(), 
                                  percent, mode.mode, mode.back, mode.ticks_per_trial,
@@ -2439,25 +2432,25 @@ class Stats:
                                  category_percents['vis3'], category_percents['vis4']],
                                 picklefile, protocol=2)
                     picklefile.close()
-                cfg.SAVE_SESSIONS = True # FIXME: put this where it belongs
-                cfg.SESSION_STATS = USER + '-sessions.dat' # FIXME: default user; configurability
-                if cfg.SAVE_SESSIONS:
-                    picklefile = open(os.path.join(get_data_dir(), cfg.SESSION_STATS), 'ab')
+                config.cfg.SAVE_SESSIONS = True # FIXME: put this where it belongs
+                config.cfg.SESSION_STATS = USER + '-sessions.dat' # FIXME: default user; configurability
+                if config.cfg.SAVE_SESSIONS:
+                    picklefile = open(os.path.join(get_data_dir(), config.cfg.SESSION_STATS), 'ab')
                     session = {} # it's not a dotdict because we want to pickle it
                     session['summary'] = outlist # that's what goes into stats.txt
-                    session['cfg'] = cfg.__dict__
+                    session['cfg'] = config.cfg.__dict__
                     session['timestamp'] = strftime("%Y-%m-%d %H:%M:%S")
                     session['mode'] = mode.mode
                     session['n'] = mode.back
                     session['manual'] = mode.manual
-                    session['trial_duration'] = mode.ticks_per_trial * TICK_DURATION
+                    session['trial_duration'] = mode.ticks_per_trial * param.TICK_DURATION
                     session['trials'] = mode.num_trials_total
                     session['session'] = self.session
                     pickle.dump(session, picklefile)
                     picklefile.close()
             except:
                 quit_with_error(_('Error writing to stats file\n%s') % 
-                                os.path.join(get_data_dir(), cfg.STATSFILE),
+                                os.path.join(get_data_dir(), config.cfg.STATSFILE),
                                 _('\nPlease check file and directory permissions.'))
 
         perfect = False        
@@ -2468,23 +2461,23 @@ class Stats:
         fallback = False
         
         if not mode.manual:
-            if percent >= get_threshold_advance():
+            if percent >= config.get_threshold_advance():
                 mode.back += 1
                 mode.num_trials_total = mode.num_trials + mode.num_trials_factor * mode.back ** mode.num_trials_exponent
                 mode.progress = 0
                 circles.update()
-                if cfg.USE_APPLAUSE:
+                if config.cfg.USE_APPLAUSE:
                     #applauseplayer = pyglet.media.ManagedSoundPlayer()
                     applauseplayer.queue(random.choice(applausesounds))
-                    applauseplayer.volume = cfg.APPLAUSE_VOLUME
+                    applauseplayer.volume = config.cfg.APPLAUSE_VOLUME
                     applauseplayer.play()
                 advance = True
-            elif mode.back > 1 and percent < get_threshold_fallback():
-                if cfg.JAEGGI_MODE:
+            elif mode.back > 1 and percent < config.get_threshold_fallback():
+                if config.cfg.JAEGGI_MODE:
                     mode.back -= 1
                     fallback = True
                 else:
-                    if mode.progress == cfg.THRESHOLD_FALLBACK_SESSIONS - 1:
+                    if mode.progress == config.cfg.THRESHOLD_FALLBACK_SESSIONS - 1:
                         mode.back -= 1
                         mode.num_trials_total = mode.num_trials + mode.num_trials_factor * mode.back ** mode.num_trials_exponent
                         fallback = True
@@ -2495,25 +2488,25 @@ class Stats:
                         circles.update()
     
             if percent == 100: perfect = True
-            elif percent >= get_threshold_advance(): awesome = True
-            elif percent >= (get_threshold_advance() + get_threshold_fallback()) // 2: great = True
-            elif percent >= get_threshold_fallback(): good = True
+            elif percent >= config.get_threshold_advance(): awesome = True
+            elif percent >= (config.get_threshold_advance() + config.get_threshold_fallback()) // 2: great = True
+            elif percent >= config.get_threshold_fallback(): good = True
             congratsLabel.update(True, advance, fallback, awesome, great, good, perfect)
         
-        if mode.manual and not cfg.USE_MUSIC_MANUAL:
+        if mode.manual and not config.cfg.USE_MUSIC_MANUAL:
             return
         
-        if cfg.USE_MUSIC:
+        if config.cfg.USE_MUSIC:
             musicplayer = pyglet.media.ManagedSoundPlayer()
-            if percent >= get_threshold_advance() and resourcepaths['music']['advance']:
+            if percent >= config.get_threshold_advance() and resourcepaths['music']['advance']:
                 musicplayer.queue(pyglet.media.load(random.choice(resourcepaths['music']['advance']), streaming = True))
-            elif percent >= (get_threshold_advance() + get_threshold_fallback()) // 2 and resourcepaths['music']['great']:
+            elif percent >= (config.get_threshold_advance() + config.get_threshold_fallback()) // 2 and resourcepaths['music']['great']:
                 musicplayer.queue(pyglet.media.load(random.choice(resourcepaths['music']['great']), streaming = True))
-            elif percent >= get_threshold_fallback() and resourcepaths['music']['good']:
+            elif percent >= config.get_threshold_fallback() and resourcepaths['music']['good']:
                 musicplayer.queue(pyglet.media.load(random.choice(resourcepaths['music']['good']), streaming = True))
             else: 
                 return
-            musicplayer.volume = cfg.MUSIC_VOLUME
+            musicplayer.volume = config.cfg.MUSIC_VOLUME
             musicplayer.play()
         
     def clear(self):
@@ -2559,7 +2552,7 @@ def update_input_labels():
 def new_session():
     mode.tick = -9  # give a 1-second delay before displaying first trial
     mode.tick -= 5 * (mode.flags[mode.mode]['multi'] - 1 )
-    if cfg.MULTI_MODE == 'image':
+    if config.cfg.MULTI_MODE == 'image':
         mode.tick -= 5 * (mode.flags[mode.mode]['multi'] - 1 )
         
     mode.session_number += 1
@@ -2568,8 +2561,8 @@ def new_session():
     mode.paused = False
     circles.update()
     
-    mode.sound_mode  = random.choice(cfg.AUDIO1_SETS)
-    mode.sound2_mode = random.choice(cfg.AUDIO2_SETS)
+    mode.sound_mode  = random.choice(config.cfg.AUDIO1_SETS)
+    mode.sound2_mode = random.choice(config.cfg.AUDIO2_SETS)
     
     visuals[0].load_set()
     visuals[0].choose_random_images(8)
@@ -2590,12 +2583,12 @@ def new_session():
     mode.soundlist  = [sounds[mode.sound_mode][l]  for l in visuals[0].letters]
     mode.soundlist2 = [sounds[mode.sound2_mode][l] for l in visuals[0].letters2]
             
-    if cfg.JAEGGI_MODE:
+    if config.cfg.JAEGGI_MODE:
         compute_bt_sequence()
         
     pyglet.clock.tick(poll=True) # Prevent music/applause skipping
         
-    if cfg.VARIABLE_NBACK:
+    if config.cfg.VARIABLE_NBACK:
         # compute variable n-back sequence using beta distribution
         mode.variable_list = []
         for index in range(0, mode.num_trials_total - mode.back):
@@ -2626,12 +2619,12 @@ def end_session(cancelled=False):
         update_all_labels()
     else:
         update_all_labels(do_analysis = True)
-        if cfg.PANHANDLE_FREQUENCY:
-            statsfile_path = os.path.join(get_data_dir(), cfg.STATSFILE)
+        if config.cfg.PANHANDLE_FREQUENCY:
+            statsfile_path = os.path.join(get_data_dir(), config.cfg.STATSFILE)
             statsfile = open(statsfile_path, 'r')
             sessions = len(statsfile.readlines()) # let's just hope people 
             statsfile.close()       # don't manually edit their statsfiles
-            if (sessions % cfg.PANHANDLE_FREQUENCY) == 0 and not CLINICAL_MODE:
+            if (sessions % config.cfg.PANHANDLE_FREQUENCY) == 0 and not param.CLINICAL_MODE:
                 Panhandle(n=sessions)
             
     
@@ -2725,17 +2718,17 @@ def generate_stimulus():
     
     # treat arithmetic specially
     operations = []
-    if cfg.ARITHMETIC_USE_ADDITION: operations.append('add')
-    if cfg.ARITHMETIC_USE_SUBTRACTION: operations.append('subtract')
-    if cfg.ARITHMETIC_USE_MULTIPLICATION: operations.append('multiply')
-    if cfg.ARITHMETIC_USE_DIVISION: operations.append('divide')
+    if config.cfg.ARITHMETIC_USE_ADDITION: operations.append('add')
+    if config.cfg.ARITHMETIC_USE_SUBTRACTION: operations.append('subtract')
+    if config.cfg.ARITHMETIC_USE_MULTIPLICATION: operations.append('multiply')
+    if config.cfg.ARITHMETIC_USE_DIVISION: operations.append('divide')
     mode.current_operation = random.choice(operations)
     
-    if cfg.ARITHMETIC_USE_NEGATIVES:
-        min_number = 0 - cfg.ARITHMETIC_MAX_NUMBER
+    if config.cfg.ARITHMETIC_USE_NEGATIVES:
+        min_number = 0 - config.cfg.ARITHMETIC_MAX_NUMBER
     else:
         min_number = 0
-    max_number = cfg.ARITHMETIC_MAX_NUMBER
+    max_number = config.cfg.ARITHMETIC_MAX_NUMBER
     
     if mode.current_operation == 'divide' and 'arithmetic' in mode.modalities[mode.mode]:
         if len(stats.session['position1']) >= mode.back:
@@ -2748,7 +2741,7 @@ def generate_stimulus():
                     possibilities.append(x)
                     continue
                 frac = Decimal(abs(number_nback)) / Decimal(abs(x))
-                if (frac % 1) in map(Decimal, cfg.ARITHMETIC_ACCEPTABLE_DECIMALS):
+                if (frac % 1) in map(Decimal, config.cfg.ARITHMETIC_ACCEPTABLE_DECIMALS):
                     possibilities.append(x)
             mode.current_stim['number'] = random.choice(possibilities)
         else:
@@ -2765,7 +2758,7 @@ def generate_stimulus():
         real_back = 1 + 2*((mode.trial_number-1) % mode.back)
     else:
         real_back = mode.back
-    if cfg.VARIABLE_NBACK:
+    if config.cfg.VARIABLE_NBACK:
         real_back = mode.variable_list[mode.trial_number - real_back - 1]
 
     if mode.modalities[mode.mode] != ['arithmetic'] and mode.trial_number > mode.back:
@@ -2790,10 +2783,10 @@ def generate_stimulus():
             if multi > 1: 
                 r2 = 3./2. * r2 # 33% chance of multi-stim reversal
 
-            if  (r1 < cfg.CHANCE_OF_GUARANTEED_MATCH):
+            if  (r1 < config.cfg.CHANCE_OF_GUARANTEED_MATCH):
                 back = real_back
 
-            elif r2 < cfg.CHANCE_OF_INTERFERENCE and mode.back > 1:
+            elif r2 < config.cfg.CHANCE_OF_INTERFERENCE and mode.back > 1:
                 back = real_back
                 interference = [-1, 1, mode.back]
                 if back < 3: interference = interference[1:] # for crab mode and 2-back
@@ -2804,7 +2797,7 @@ def generate_stimulus():
                          stats.session[back_data][mode.trial_number -  real_back    - 1]:
                         back = real_back + i
                 if back == real_back: back = None # if none of the above worked
-                elif DEBUG:
+                elif param.DEBUG:
                     print 'Forcing interference for %s' % current
             
             if back:            
@@ -2821,12 +2814,12 @@ def generate_stimulus():
                         mode.current_stim['position' + `i+1`] = mode.current_stim[current]
                         positions[i] = mode.current_stim[current]
                     positions[int(current[-1])-1] = matching_stim
-                if DEBUG:
+                if param.DEBUG:
                     print "setting %s to %i" % (current, matching_stim)
                 mode.current_stim[current] = matching_stim
 
         if multi > 1:
-            if random.random() < cfg.CHANCE_OF_INTERFERENCE / 3.:
+            if random.random() < config.cfg.CHANCE_OF_INTERFERENCE / 3.:
                 mod = 'position'
                 if 'vis1' in mode.modalities[mode.mode] and random.random() < .5:
                     mod = 'vis'
@@ -2842,19 +2835,19 @@ def generate_stimulus():
     # default color is 1 (red) or 2 (black)
     # default vis is 0 (square)
     # audio is never static so it doesn't have a default.
-    if not 'color'     in mode.modalities[mode.mode]: mode.current_stim['color'] = cfg.VISUAL_COLORS[0]
+    if not 'color'     in mode.modalities[mode.mode]: mode.current_stim['color'] = config.cfg.VISUAL_COLORS[0]
     if not 'position1' in mode.modalities[mode.mode]: mode.current_stim['position1'] = 0
     if not set(['visvis', 'arithmetic', 'image']).intersection( mode.modalities[mode.mode] ):
         mode.current_stim['vis'] = 0
     if multi > 1 and not 'vis1' in mode.modalities[mode.mode]:
         for i in range(1, 5):
-            if cfg.MULTI_MODE == 'color':
+            if config.cfg.MULTI_MODE == 'color':
                 mode.current_stim['vis'+`i`] = 0 # use squares
-            elif cfg.MULTI_MODE == 'image':
-                mode.current_stim['vis'+`i`] = cfg.VISUAL_COLORS[0]
+            elif config.cfg.MULTI_MODE == 'image':
+                mode.current_stim['vis'+`i`] = config.cfg.VISUAL_COLORS[0]
         
     # in jaeggi mode, set using the predetermined sequence.
-    if cfg.JAEGGI_MODE:
+    if config.cfg.JAEGGI_MODE:
         mode.current_stim['position1'] = mode.bt_sequence[0][mode.trial_number - 1]
         mode.current_stim['audio'] = mode.bt_sequence[1][mode.trial_number - 1]
     
@@ -2873,11 +2866,11 @@ def generate_stimulus():
         player = pyglet.media.Player()
         player.queue(mode.soundlist[mode.current_stim['audio']-1])
         player.min_distance = 100.0
-        if cfg.CHANNEL_AUDIO1 == 'left':
+        if config.cfg.CHANNEL_AUDIO1 == 'left':
             player.position = (-99.0, 0.0, 0.0)
-        elif cfg.CHANNEL_AUDIO1 == 'right':
+        elif config.cfg.CHANNEL_AUDIO1 == 'right':
             player.position = (99.0, 0.0, 0.0)
-        elif cfg.CHANNEL_AUDIO1 == 'center':
+        elif config.cfg.CHANNEL_AUDIO1 == 'center':
             #player.position = (0.0, 0.0, 0.0)
             pass
         player.play()
@@ -2885,21 +2878,21 @@ def generate_stimulus():
         player2 = pyglet.media.Player()
         player2.queue(mode.soundlist2[mode.current_stim['audio2']-1])
         player2.min_distance = 100.0
-        if cfg.CHANNEL_AUDIO2 == 'left':
+        if config.cfg.CHANNEL_AUDIO2 == 'left':
             player2.position = (-99.0, 0.0, 0.0)
-        elif cfg.CHANNEL_AUDIO2 == 'right':
+        elif config.cfg.CHANNEL_AUDIO2 == 'right':
             player2.position = (99.0, 0.0, 0.0)
-        elif cfg.CHANNEL_AUDIO2 == 'center':
+        elif config.cfg.CHANNEL_AUDIO2 == 'center':
             #player2.position = (0.0, 0.0, 0.0)
             pass
         player2.play()
         
             
-    if cfg.VARIABLE_NBACK and mode.trial_number > mode.back:
+    if config.cfg.VARIABLE_NBACK and mode.trial_number > mode.back:
         variable = mode.variable_list[mode.trial_number - 1 - mode.back]
     else:
         variable = 0
-    if DEBUG and multi < 2:
+    if param.DEBUG and multi < 2:
         print "trial=%i, \tpos=%i, \taud=%i, \tcol=%i, \tvis=%i, \tnum=%i,\top=%s, \tvar=%i" % \
                 (mode.trial_number, mode.current_stim['position1'], mode.current_stim['audio'], 
                  mode.current_stim['color'], mode.current_stim['vis'], \
@@ -2910,13 +2903,13 @@ def generate_stimulus():
                          mode.current_operation, variable)
     else: # multi > 1
         for i in range(1, multi+1):
-            if cfg.MULTI_MODE == 'color':
+            if config.cfg.MULTI_MODE == 'color':
                 if DEBUG:
                     print "trial=%i, \tpos=%i, \taud=%i, \tcol=%i, \tvis=%i, \tnum=%i,\top=%s, \tvar=%i" % \
                         (mode.trial_number, mode.current_stim['position' + `i`], mode.current_stim['audio'], 
-                        cfg.VISUAL_COLORS[i-1], mode.current_stim['vis'+`i`], \
+                        config.cfg.VISUAL_COLORS[i-1], mode.current_stim['vis'+`i`], \
                         mode.current_stim['number'], mode.current_operation, variable)
-                visuals[i-1].spawn(mode.current_stim['position'+`i`], cfg.VISUAL_COLORS[i-1], 
+                visuals[i-1].spawn(mode.current_stim['position'+`i`], config.cfg.VISUAL_COLORS[i-1],
                                    mode.current_stim['vis'+`i`], mode.current_stim['number'], 
                                    mode.current_operation, variable)
             else:
@@ -2941,27 +2934,24 @@ def toggle_manual_mode():
     update_all_labels()
 
 def set_user(newuser):
-    global cfg
-    global USER
-    global CONFIGFILE
-    USER = newuser
-    if USER.lower() == 'default':
-        CONFIGFILE = 'config.ini'
+    param.USER = newuser
+    if param.USER.lower() == 'default':
+        param.CONFIGFILE = 'config.ini'
     else:
-        CONFIGFILE = USER + '-config.ini'
-    rewrite_configfile(CONFIGFILE, overwrite=False)
-    cfg = parse_config(CONFIGFILE)
+        param.CONFIGFILE = USER + '-config.ini'
+    config.rewrite_configfile(param.CONFIGFILE, overwrite=False)
+    config.cfg = config.parse_config(param.CONFIGFILE)
     stats.initialize_session()
     stats.parse_statsfile()
-    if len(stats.full_history) > 0 and not cfg.JAEGGI_MODE:
+    if len(stats.full_history) > 0 and not config.cfg.JAEGGI_MODE:
         mode.mode = stats.full_history[-1][1]
     stats.retrieve_progress()
     # text labels also need to be remade; until that's done, this remains commented out
-    #if cfg.BLACK_BACKGROUND: 
+    #if config.cfg.BLACK_BACKGROUND:
     #    glClearColor(0, 0, 0, 1)
     #else:
     #    glClearColor(1, 1, 1, 1)
-    window.set_fullscreen(cfg.WINDOW_FULLSCREEN) # window size needs to be changed
+    window.set_fullscreen(config.cfg.WINDOW_FULLSCREEN) # window size needs to be changed
     update_all_labels()
     save_last_user('defaults.ini')
 
@@ -3011,17 +3001,17 @@ def on_key_press(symbol, modifiers):
             #mode.shrink_brain = True
             #pyglet.clock.schedule_interval(shrink_brain, 1/60.)
             
-        elif symbol == key.C and not cfg.JAEGGI_MODE:
+        elif symbol == key.C and not config.cfg.JAEGGI_MODE:
             GameSelect()
                                     
-        elif symbol == key.I and not cfg.JAEGGI_MODE:
+        elif symbol == key.I and not config.cfg.JAEGGI_MODE:
             ImageSelect()
 
         elif symbol == key.H:
-            webbrowser.open_new_tab(WEB_TUTORIAL)
+            webbrowser.open_new_tab(param.WEB_TUTORIAL)
                 
-        elif symbol == key.D and not CLINICAL_MODE:
-            webbrowser.open_new_tab(WEB_DONATE)
+        elif symbol == key.D and not param.CLINICAL_MODE:
+            webbrowser.open_new_tab(param.WEB_DONATE)
             
         elif symbol == key.V and DEBUG:
             OptionsScreen()
@@ -3038,11 +3028,11 @@ def on_key_press(symbol, modifiers):
         elif symbol == key.L:
             LanguageScreen()
                 
-        elif symbol == key.S and not cfg.JAEGGI_MODE:
+        elif symbol == key.S and not config.cfg.JAEGGI_MODE:
             SoundSelect()
             
         elif symbol == key.F:
-            webbrowser.open_new_tab(WEB_FORUM)
+            webbrowser.open_new_tab(param.WEB_FORUM)
         
         elif symbol == key.O:
             edit_config_ini()
@@ -3067,7 +3057,7 @@ def on_key_press(symbol, modifiers):
     elif not mode.started:
         
         if symbol == key.ESCAPE or symbol == key.X:
-            if cfg.SKIP_TITLE_SCREEN:
+            if config.cfg.SKIP_TITLE_SCREEN:
                 window.on_close()
             else:
                 mode.title_screen = True
@@ -3075,14 +3065,14 @@ def on_key_press(symbol, modifiers):
         elif symbol == key.SPACE:
             new_session()
                         
-        elif CLINICAL_MODE:
+        elif param.CLINICAL_MODE:
             pass
             #if symbol == key.H:
                 #webbrowser.open_new_tab(CLINICAL_TUTORIAL)
         # No elifs below this line at this indentation will be 
         # executed in CLINICAL_MODE
         
-        elif symbol == key.E and cfg.WINDOW_FULLSCREEN:
+        elif symbol == key.E and config.cfg.WINDOW_FULLSCREEN:
             saccadic.start()
         
         elif symbol == key.G:
@@ -3117,12 +3107,12 @@ def on_key_press(symbol, modifiers):
             sessionInfoLabel.flash()            
             
         elif symbol == key.F5 and mode.manual:
-            if mode.ticks_per_trial < TICKS_MAX:
+            if mode.ticks_per_trial < param.TICKS_MAX:
                 mode.ticks_per_trial += 1
                 sessionInfoLabel.flash()
                         
         elif symbol == key.F6 and mode.manual:
-            if mode.ticks_per_trial > TICKS_MIN:
+            if mode.ticks_per_trial > param.TICKS_MIN:
                 mode.ticks_per_trial -= 1
                 sessionInfoLabel.flash()
                 
@@ -3135,7 +3125,7 @@ def on_key_press(symbol, modifiers):
             circles.update()
 
         elif symbol == key.C:
-            if cfg.JAEGGI_MODE:
+            if config.cfg.JAEGGI_MODE:
                 jaeggiWarningLabel.show()
                 return
             GameSelect()
@@ -3144,19 +3134,19 @@ def on_key_press(symbol, modifiers):
             UserScreen()
             
         elif symbol == key.I:
-            if cfg.JAEGGI_MODE:
+            if config.cfg.JAEGGI_MODE:
                 jaeggiWarningLabel.show()
                 return
             ImageSelect()
 
         elif symbol == key.S:
-            if cfg.JAEGGI_MODE:
+            if config.cfg.JAEGGI_MODE:
                 jaeggiWarningLabel.show()
                 return
             SoundSelect()
             
         elif symbol == key.W:
-            webbrowser.open_new_tab(WEB_SITE)
+            webbrowser.open_new_tab(param.WEB_SITE)
             if update_available:
                 window.on_close()
             
@@ -3167,26 +3157,26 @@ def on_key_press(symbol, modifiers):
             circles.update()
 
         elif symbol == key.H:
-            webbrowser.open_new_tab(WEB_TUTORIAL)
+            webbrowser.open_new_tab(param.WEB_TUTORIAL)
                         
-        elif symbol == key.D and not CLINICAL_MODE:
-            webbrowser.open_new_tab(WEB_DONATE)
+        elif symbol == key.D and not param.CLINICAL_MODE:
+            webbrowser.open_new_tab(param.WEB_DONATE)
 
-        elif symbol == key.J and 'morse' in cfg.AUDIO1_SETS or 'morse' in cfg.AUDIO2_SETS:
-            webbrowser.open_new_tab(WEB_MORSE)
+        elif symbol == key.J and 'morse' in config.cfg.AUDIO1_SETS or 'morse' in config.cfg.AUDIO2_SETS:
+            webbrowser.open_new_tab(param.WEB_MORSE)
                             
                         
     # these are the keys during a running session.
     elif mode.started:            
-        if (symbol == key.ESCAPE or symbol == key.X) and not CLINICAL_MODE:
+        if (symbol == key.ESCAPE or symbol == key.X) and not param.CLINICAL_MODE:
             end_session(cancelled = True)
             
-        elif symbol == key.P and not CLINICAL_MODE:
+        elif symbol == key.P and not param.CLINICAL_MODE:
             mode.paused = not mode.paused
             pausedLabel.update()
             field.crosshair_update()
                 
-        elif symbol == key.F8 and not CLINICAL_MODE:
+        elif symbol == key.F8 and not param.CLINICAL_MODE:
             mode.hide_text = not mode.hide_text
             update_all_labels()
                 
@@ -3222,13 +3212,13 @@ def on_key_press(symbol, modifiers):
             
             for k in mode.modalities[mode.mode]:
                 if not k == 'arithmetic':
-                    keycode = cfg['KEY_%s' % k.upper()]
+                    keycode = config.cfg['KEY_%s' % k.upper()]
                     if symbol == keycode:
                         mode.inputs[k] = True
                         mode.input_rts[k] = time.time() - mode.trial_starttime
                         update_input_labels()
         
-        if symbol == cfg.KEY_ADVANCE and mode.flags[mode.mode]['selfpaced']:
+        if symbol == config.cfg.KEY_ADVANCE and mode.flags[mode.mode]['selfpaced']:
             mode.tick = mode.ticks_per_trial-5
 
     return pyglet.event.EVENT_HANDLED
@@ -3248,7 +3238,7 @@ def on_draw():
         titleKeysLabel.draw()
     else:
         batch.draw()
-        if not mode.started and not CLINICAL_MODE:
+        if not mode.started and not param.CLINICAL_MODE:
             brain_icon.draw()
             logoUpperLabel.draw()
             logoLowerLabel.draw()
@@ -3291,7 +3281,7 @@ def update(dt):
             update_input_labels()
         if mode.tick == mode.ticks_per_trial:
             mode.tick = 0
-pyglet.clock.schedule_interval(update, TICK_DURATION)
+pyglet.clock.schedule_interval(update, param.TICK_DURATION)
 
 angle = 0
 def pulsate(dt):
@@ -3326,11 +3316,11 @@ except:
     quit_with_error('Error creating test polygon. Full text of error:\n')
 
 # Instantiate the classes
-mode = Mode(cfg)
+mode = Mode()
 field = Field()
 visuals = [Visual() for i in range(4)]
 stats = Stats()
-graph = Graph(window, cfg, mode)
+graph = Graph(window, mode)
 circles = Circles()
 saccadic = Saccadic()
 
@@ -3361,7 +3351,7 @@ input_labels = []
 # load last game mode
 stats.initialize_session()
 stats.parse_statsfile()
-if len(stats.full_history) > 0 and not cfg.JAEGGI_MODE:
+if len(stats.full_history) > 0 and not config.cfg.JAEGGI_MODE:
     mode.mode = stats.full_history[-1][1]
 stats.retrieve_progress()
 
@@ -3371,7 +3361,7 @@ update_all_labels()
 brain_icon = pyglet.sprite.Sprite(pyglet.image.load(random.choice(resourcepaths['misc']['brain'])))
 brain_icon.set_position(field.center_x - brain_icon.width//2,
                            field.center_y - brain_icon.height//2)
-if cfg.BLACK_BACKGROUND:
+if config.cfg.BLACK_BACKGROUND:
     brain_graphic = pyglet.sprite.Sprite(pyglet.image.load(random.choice(resourcepaths['misc']['splash-black'])))
 else:
     brain_graphic = pyglet.sprite.Sprite(pyglet.image.load(random.choice(resourcepaths['misc']['splash'])))

@@ -1,5 +1,5 @@
 import os, sys, imp, traceback
-from parameters import *
+import parameters as param
 
 #__all__ = ["get_settings_path", "get_data_dir", "FOLDER_DATA"]
 
@@ -80,4 +80,4 @@ def get_res_dir():
     try:
         return sys.argv[sys.argv.index('--resdir') + 1]
     except:
-        return os.path.join(get_main_dir(), FOLDER_RES)
+        return os.path.join(get_main_dir(), param.FOLDER_RES)

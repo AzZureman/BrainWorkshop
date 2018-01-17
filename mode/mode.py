@@ -1,12 +1,16 @@
+import config
+import parameters as param
+
+
 # All changeable game state variables are located in an instance of the Mode class
 class Mode:
-    def __init__(self, cfg):
-        self.mode = cfg.GAME_MODE
-        self.back = default_nback_mode(self.mode, cfg)
-        self.ticks_per_trial = default_ticks(self.mode, cfg)
-        self.num_trials = cfg.NUM_TRIALS
-        self.num_trials_factor = cfg.NUM_TRIALS_FACTOR
-        self.num_trials_exponent = cfg.NUM_TRIALS_EXPONENT
+    def __init__(self):
+        self.mode = config.cfg.GAME_MODE
+        self.back = default_nback_mode(self.mode)
+        self.ticks_per_trial = default_ticks(self.mode)
+        self.num_trials = config.cfg.NUM_TRIALS
+        self.num_trials_factor = config.cfg.NUM_TRIALS_FACTOR
+        self.num_trials_exponent = config.cfg.NUM_TRIALS_EXPONENT
         self.num_trials_total = self.num_trials + self.num_trials_factor * self.back ** self.num_trials_exponent
         self.short_mode_names = {2:'D',
                                  3:'PCA',
@@ -140,9 +144,9 @@ class Mode:
 
         self.variable_list = []
 
-        self.manual = cfg.MANUAL
+        self.manual = config.cfg.MANUAL
         if not self.manual:
-            self.enforce_standard_mode(cfg)
+            self.enforce_standard_mode()
 
         self.inputs = {'position1': False,
                        'position2': False,
@@ -176,7 +180,7 @@ class Mode:
                           'audio':     0.,
                           'audio2':    0.}
 
-        self.hide_text = cfg.HIDE_TEXT
+        self.hide_text = config.cfg.HIDE_TEXT
 
         self.current_stim = {'position1': 0,
                              'position2': 0,
@@ -200,7 +204,7 @@ class Mode:
         self.sound_select = False
         self.draw_graph = False
         self.saccadic = False
-        if cfg.SKIP_TITLE_SCREEN:
+        if config.cfg.SKIP_TITLE_SCREEN:
             self.title_screen = False
         else:
             self.title_screen = True
@@ -218,12 +222,12 @@ class Mode:
 
         self.bt_sequence = []
 
-    def enforce_standard_mode(self, cfg):
-        self.back = default_nback_mode(self.mode, cfg)
-        self.ticks_per_trial = default_ticks(self.mode, cfg)
-        self.num_trials = cfg.NUM_TRIALS
-        self.num_trials_factor = cfg.NUM_TRIALS_FACTOR
-        self.num_trials_exponent = cfg.NUM_TRIALS_EXPONENT
+    def enforce_standard_mode(self):
+        self.back = default_nback_mode(self.mode)
+        self.ticks_per_trial = default_ticks(self.mode)
+        self.num_trials = config.cfg.NUM_TRIALS
+        self.num_trials_factor = config.cfg.NUM_TRIALS_FACTOR
+        self.num_trials_exponent = config.cfg.NUM_TRIALS_EXPONENT
         self.num_trials_total = self.num_trials + self.num_trials_factor * \
             self.back ** self.num_trials_exponent
         self.session_number = 0
@@ -234,23 +238,23 @@ class Mode:
         return self.short_mode_names[mode] + str(back) + 'B'
 
 
-def default_nback_mode(mode, cfg):
-    if ('BACK_%i' % mode) in cfg:
-        return cfg['BACK_%i' % mode]
+def default_nback_mode(mode):
+    if ('BACK_%i' % mode) in config.cfg:
+        return config.cfg['BACK_%i' % mode]
     elif mode > 127:  # try to use the base mode for crab, multi
-        return default_nback_mode(mode % 128, cfg)
+        return default_nback_mode(mode % 128)
     else:
-        return cfg.BACK_DEFAULT
+        return config.cfg.BACK_DEFAULT
 
 
-def default_ticks(mode, cfg):
-    if ('TICKS_%i' % mode) in cfg:
-        return cfg['TICKS_%i' % mode]
+def default_ticks(mode):
+    if ('TICKS_%i' % mode) in config.cfg:
+        return config.cfg['TICKS_%i' % mode]
     elif mode > 127:
-        bonus = ((mode & 128)/128) * cfg.BONUS_TICKS_CRAB
+        bonus = ((mode & 128)/128) * config.cfg.BONUS_TICKS_CRAB
         if mode & 768:
-            bonus += cfg['BONUS_TICKS_MULTI_%i' % ((mode & 768)/256+1)]
-        if DEBUG: print "Adding a bonus of %i ticks for mode %i" % (bonus, mode)
-        return bonus + default_ticks(mode % 128, cfg)
+            bonus += config.cfg['BONUS_TICKS_MULTI_%i' % ((mode & 768)/256+1)]
+        if param.DEBUG: print "Adding a bonus of %i ticks for mode %i" % (bonus, mode)
+        return bonus + default_ticks(mode % 128)
     else:
-        return cfg.TICKS_DEFAULT
+        return config.cfg.TICKS_DEFAULT

@@ -1,14 +1,13 @@
 import pyglet, os, math
 from pyglet.gl import *
 from datetime import *
-from config import *
+import config
 from utils import *
 
 
 class Graph:
-    def __init__(self, window, cfg, mode):
+    def __init__(self, window, mode):
         self.window = window
-        self.cfg = cfg
         self.mode = mode
         self.graph = 2
         self.reset_dictionaries()
@@ -55,9 +54,9 @@ class Graph:
                'position3': 19, 'position4': 20, 'vis1': 21, 'vis2': 22, 'vis3': 23,
                'vis4': 24}
 
-        if os.path.isfile(os.path.join(get_data_dir(), self.cfg.STATSFILE)):
+        if os.path.isfile(os.path.join(get_data_dir(), config.cfg.STATSFILE)):
             try:
-                statsfile_path = os.path.join(get_data_dir(), self.cfg.STATSFILE)
+                statsfile_path = os.path.join(get_data_dir(), config.cfg.STATSFILE)
                 statsfile = open(statsfile_path, 'r')
                 for line in statsfile:
                     if line == '': continue
@@ -65,7 +64,7 @@ class Graph:
                     if line[0] not in '0123456789': continue
                     datestamp = date(int(line[:4]), int(line[5:7]), int(line[8:10]))
                     hour = int(line[11:13])
-                    if hour < self.cfg.ROLLOVER_HOUR:
+                    if hour < config.cfg.ROLLOVER_HOUR:
                         datestamp = date.fromordinal(datestamp.toordinal() - 1)
                     if line.find('\t') >= 0:
                         separator = '\t'
@@ -95,7 +94,7 @@ class Graph:
                 statsfile.close()
             except:
                 quit_with_error(_('Error parsing stats file\n %s') %
-                                os.path.join(get_data_dir(), self.cfg.STATSFILE),
+                                os.path.join(get_data_dir(), config.cfg.STATSFILE),
                                 _('Please fix, delete or rename the stats file.'))
 
             def mean(x):
@@ -119,7 +118,7 @@ class Graph:
                     elif self.styles[self.style] == 'N+2*%-1':
                         scores = [entry[0] - 1 + 2 * .01 * entry[1] for entry in entries]
                     elif self.styles[self.style] == 'N+10/3+4/3':
-                        adv, flb = get_threshold_advance(), get_threshold_fallback()
+                        adv, flb = config.get_threshold_advance(), config.get_threshold_fallback()
                         m = 1. / (adv - flb)
                         b = -m * flb
                         scores = [entry[0] + b + m * (entry[1]) for entry in entries]
@@ -172,7 +171,7 @@ class Graph:
 
         linecolor = (0, 0, 255)
         linecolor2 = (255, 0, 0)
-        if self.cfg.BLACK_BACKGROUND:
+        if config.cfg.BLACK_BACKGROUND:
             axiscolor = (96, 96, 96)
             minorcolor = (64, 64, 64)
         else:
@@ -207,19 +206,19 @@ class Graph:
             batch=self.batch,
             multiline=True, width=300,
             font_size=9,
-            color = self.cfg.COLOR_TEXT,
+            color = config.cfg.COLOR_TEXT,
             x = 10, y = self.window.height - 10,
             anchor_x='left', anchor_y='top')
 
         pyglet.text.Label(graph_title,
                           batch=self.batch,
-                          font_size=18, bold=True, color=self.cfg.COLOR_TEXT,
+                          font_size=18, bold=True, color=config.cfg.COLOR_TEXT,
                           x=center_x, y=top + 60,
                           anchor_x='center', anchor_y='center')
 
         pyglet.text.Label(_('Date'),
                           batch=self.batch,
-                          font_size=12, bold=True, color=self.cfg.COLOR_TEXT,
+                          font_size=12, bold=True, color=config.cfg.COLOR_TEXT,
                           x=center_x, y=bottom - 80,
                           anchor_x='center', anchor_y='center')
 
@@ -237,7 +236,7 @@ class Graph:
 
         pyglet.text.Label(_('Score'), width=1,
                           batch=self.batch,
-                          font_size=12, bold=True, color=self.cfg.COLOR_TEXT,
+                          font_size=12, bold=True, color=config.cfg.COLOR_TEXT,
                           x=left - 60, y=center_y,
                           anchor_x='right', anchor_y='center')
 
@@ -297,7 +296,7 @@ class Graph:
             if not index % (skip_x + 1):
                 pyglet.text.Label(datestring, multiline=True, width=12,
                                   batch=self.batch,
-                                  font_size=8, bold=False, color=self.cfg.COLOR_TEXT,
+                                  font_size=8, bold=False, color=config.cfg.COLOR_TEXT,
                                   x=x, y=bottom - 15,
                                   anchor_x='center', anchor_y='top')
                 self.batch.add(2, GL_LINES,
@@ -316,7 +315,7 @@ class Graph:
             y = int((y_marking - ymin) / (ymax - ymin) * height + bottom)
             pyglet.text.Label(str(round(y_marking, 2)),
                               batch=self.batch,
-                              font_size=10, bold=False, color=self.cfg.COLOR_TEXT,
+                              font_size=10, bold=False, color=config.cfg.COLOR_TEXT,
                               x=left - 30, y=y + 1,
                               anchor_x='center', anchor_y='center')
             self.batch.add(2, GL_LINES,
@@ -382,6 +381,6 @@ class Graph:
 
         pyglet.text.Label(''.join(str_list),
                           batch=self.batch,
-                          font_size=11, bold=False, color=self.cfg.COLOR_TEXT,
+                          font_size=11, bold=False, color=config.cfg.COLOR_TEXT,
                           x=self.window.width // 2, y=20,
                           anchor_x='center', anchor_y='center')
