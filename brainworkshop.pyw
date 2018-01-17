@@ -46,7 +46,7 @@ def edit_config_ini():
 def quit_with_error(message='', postmessage='', quit=True, trace=True):
     if message:     print >> sys.stderr, message + '\n'
     if trace:       
-        print >> sys.stderr, _("Full text of error:\n")
+        print >> sys.stderr, ("Full text of error:\n")
         traceback.print_exc()
     if postmessage: print >> sys.stderr, '\n\n' + postmessage
     if quit:        sys.exit(1)
@@ -170,13 +170,13 @@ try:
     if param.NOVBO: pyglet.options['graphics_vbo'] = False
     from pyglet.window import key
 except:
-    quit_with_error(_('Error: unable to load pyglet.  If you already installed pyglet, please ensure ctypes is installed.  Please visit %s') % param.WEB_PYGLET_DOWNLOAD)
+    quit_with_error(('Error: unable to load pyglet.  If you already installed pyglet, please ensure ctypes is installed.  Please visit %s') % param.WEB_PYGLET_DOWNLOAD)
 try:
     pyglet.options['audio'] = ('directsound', 'openal', 'alsa', )
     # use in pyglet 1.2: pyglet.options['audio'] = ('directsound', 'pulse', 'openal', )
     import pyglet.media
 except:
-    quit_with_error(_('No suitable audio driver could be loaded.'))
+    quit_with_error(('No suitable audio driver could be loaded.'))
         
 # Initialize resources (sounds and images)
 #
@@ -185,13 +185,13 @@ except:
 
 res_path = get_res_dir()
 if not os.access(res_path, os.F_OK):
-    quit_with_error(_('Error: the resource folder\n%s') % res_path +
-                    _(' does not exist or is not readable.  Exiting'), trace=False)
+    quit_with_error(('Error: the resource folder\n%s') % res_path +
+                    (' does not exist or is not readable.  Exiting'), trace=False)
 
 if pyglet.version < '1.1':
-    quit_with_error(_('Error: pyglet 1.1 or greater is required.\n') + 
-                    _('You probably have an older version of pyglet installed.\n') +
-                    _('Please visit %s') % param.WEB_PYGLET_DOWNLOAD, trace=False)
+    quit_with_error(('Error: pyglet 1.1 or greater is required.\n') +
+                    ('You probably have an older version of pyglet installed.\n') +
+                    ('Please visit %s') % param.WEB_PYGLET_DOWNLOAD, trace=False)
 
 supportedtypes = {'sounds' :['wav'],
                   'music'  :['wav', 'ogg', 'mp3', 'aac', 'mp2', 'ac3', 'm4a'], # what else?
@@ -237,8 +237,8 @@ def test_avbin():
         config.cfg.USE_MUSIC = False
         if pyglet.version >= '1.2':  
             pyglet.media.have_avbin = False
-        print _('AVBin not detected. Music disabled.')
-        print _('Download AVBin from: http://code.google.com/p/avbin/')
+        print ('AVBin not detected. Music disabled.')
+        print ('Download AVBin from: http://code.google.com/p/avbin/')
 
     except: # WindowsError
         config.cfg.USE_MUSIC = False
@@ -351,7 +351,7 @@ else:
 caption.append(param.VERSION)
 if param.USER != 'default':
     caption.append(' - ')
-    caption.append(USER)
+    caption.append(param.USER)
 if config.cfg.WINDOW_FULLSCREEN:
     style = pyglet.window.Window.WINDOW_STYLE_BORDERLESS
 else:
@@ -490,7 +490,7 @@ class Menu:
             
     
     def __init__(self, options, values=None, actions={}, names={}, title='', 
-                 footnote = _('Esc: cancel     Space: modify option     Enter: apply'), 
+                 footnote = ('Esc: cancel     Space: modify option     Enter: apply'),
                  choose_once=False, default=0):
         self.bgcolor = (255 * int(not config.cfg.BLACK_BACKGROUND), )*3
         self.textcolor = (255 * int(config.cfg.BLACK_BACKGROUND), )*3 + (255,)
@@ -537,7 +537,7 @@ class Menu:
         
     def textify(self, x):
         if type(x) == bool:
-            return x and _('Yes') or _('No')
+            return x and ('Yes') or ('No')
         return str(x)
 
     def update_labels(self):
@@ -642,14 +642,14 @@ class MainMenu(Menu):
     def __init__(self):
         def NotImplemented():
             raise NotImplementedError
-        ops = [('game', _('Choose Game Mode'), GameSelect),
-               ('sounds', _('Choose Sounds'), SoundSelect),
-               ('images', _('Choose Images'), ImageSelect),
-               ('user', _('Choose User'), UserScreen),
-               ('graph', _('Daily Progress Graph'), NotImplemented),
-               ('help', _('Help / Tutorial'), NotImplemented),
-               ('donate', _('Donate'), Notimplemented)
-               ('forum', _('Go to Forum / Mailing List'), NotImplemented)]
+        ops = [('game', ('Choose Game Mode'), GameSelect),
+               ('sounds', ('Choose Sounds'), SoundSelect),
+               ('images', ('Choose Images'), ImageSelect),
+               ('user', ('Choose User'), UserScreen),
+               ('graph', ('Daily Progress Graph'), NotImplemented),
+               ('help', ('Help / Tutorial'), NotImplemented),
+               ('donate', ('Donate'), NotImplemented)
+               ('forum', ('Go to Forum / Mailing List'), NotImplemented)]
         options =       [  op[0]         for op in ops]
         names   = dict( [ (op[0], op[1]) for op in ops])
         actions = dict( [ (op[0], op[2]) for op in ops])
@@ -657,12 +657,12 @@ class MainMenu(Menu):
 class UserScreen(Menu):
     def __init__(self):
     
-        self.users = users = [_("New user"), 'Blank line'] + get_users()
+        self.users = users = [("New user"), 'Blank line'] + get_users()
         Menu.__init__(self, options=users, 
                       #actions=dict([(user, choose_user) for user in users]),
-                      title=_("Please select your user profile"),
+                      title=("Please select your user profile"),
                       choose_once=True,
-                      default=users.index(USER))
+                      default=users.index(param.USER))
     
     def save(self):
         self.select() # Enter should choose a user too
@@ -670,8 +670,8 @@ class UserScreen(Menu):
         
     def choose(self, k, i):
         newuser = self.users[i]
-        if newuser == _("New user"):
-            textInput = TextInputScreen(_("Enter new user name:"), USER, callback=set_user, catch=' ')
+        if newuser == ("New user"):
+            textInput = TextInputScreen(("Enter new user name:"), param.USER, callback=set_user, catch=' ')
         else:
             set_user(newuser)
             
@@ -683,7 +683,7 @@ class LanguageScreen(Menu):
         except:
             default = 0
         Menu.__init__(self, options=languages,
-                      title=_("Please select your preferred language"),
+                      title=("Please select your preferred language"),
                       choose_once=True,
                       default=default)
     def save(self):
@@ -701,15 +701,15 @@ class OptionsScreen(Menu):
         """        
         options = config.cfg.keys()
         options.sort()
-        Menu.__init__(self, options=options, values=config.cfg, title=_('Configuration'))
+        Menu.__init__(self, options=options, values=config.cfg, title=('Configuration'))
 
 
 class GameSelect(Menu):
     def __init__(self):
         modalities = ['position1', 'color', 'image', 'audio', 'audio2', 'arithmetic']
         options = modalities[:]
-        names = dict([(m, _("Use %s") % m) for m in modalities])
-        names['position1'] = _("Use position")
+        names = dict([(m, ("Use %s") % m) for m in modalities])
+        names['position1'] = ("Use position")
         options.append("Blank line")
         options.append('combination')
         options.append("Blank line")
@@ -722,13 +722,13 @@ class GameSelect(Menu):
         options.append('selfpaced')
         options.append("Blank line")
         options.append('interference')
-        names['combination'] = _('Combination N-back mode')  
-        names['variable'] = _('Use variable N-Back levels')
-        names['crab'] = _('Crab-back mode (reverse order of sets of N stimuli)')
-        names['multi'] = _('Simultaneous visual stimuli')
-        names['multimode'] = _('Simultaneous stimuli differentiated by')
-        names['selfpaced'] = _('Self-paced mode')
-        names['interference'] = _('Interference (tricky stimulus generation)')
+        names['combination'] = ('Combination N-back mode')
+        names['variable'] = ('Use variable N-Back levels')
+        names['crab'] = ('Crab-back mode (reverse order of sets of N stimuli)')
+        names['multi'] = ('Simultaneous visual stimuli')
+        names['multimode'] = ('Simultaneous stimuli differentiated by')
+        names['selfpaced'] = ('Self-paced mode')
+        names['interference'] = ('Interference (tricky stimulus generation)')
         vals = dict([[op, None] for op in options])
         curmodes = mode.modalities[mode.mode]
         interference_options = [i / 8. for i in range(0, 9)]
@@ -748,7 +748,7 @@ class GameSelect(Menu):
         vals['selfpaced'] = bool(mode.flags[mode.mode]['selfpaced'])
         for m in modalities:
             vals[m] = m in curmodes
-        Menu.__init__(self, options, vals, names=names, title=_('Choose your game mode'))        
+        Menu.__init__(self, options, vals, names=names, title=('Choose your game mode'))
         self.modelabel = pyglet.text.Label('', font_size=self.titlesize,
             bold=False, color=(0,0,0,255), batch=self.batch,
             x=window.width/2, y=(window.height*1)/10,
@@ -763,7 +763,7 @@ class GameSelect(Menu):
                 self.modelabel.text = mode.long_mode_names[self.newmode] + \
                     (self.values['variable'] and ' V.' or '') + ' N-Back'
             else:
-                self.modelabel.text = _("An invalid mode has been selected.")
+                self.modelabel.text = "An invalid mode has been selected."
         except AttributeError:
             pass
         Menu.update_labels(self)
@@ -794,7 +794,7 @@ class GameSelect(Menu):
                 self.newmode = candidate
             else: self.newmode = False
         else:
-            if DEBUG: print candidates, base
+            if param.DEBUG: print candidates, base
             self.newmode = False 
 
     def close(self):
@@ -876,7 +876,7 @@ class ImageSelect(Menu):
         options = self.new_sets.keys()
         options.sort()
         vals = self.new_sets
-        Menu.__init__(self, options, vals, title=_('Choose images to use for the Image n-back tasks.'))
+        Menu.__init__(self, options, vals, title=('Choose images to use for the Image n-back tasks.'))
 
     def close(self):
         while config.cfg.IMAGE_SETS:
@@ -918,10 +918,10 @@ class SoundSelect(Menu):
         names = {}
         for op in options:
             if op.startswith('1') or op.startswith('2'):
-                names[op] = _("Use sound set '%s' for channel %s") % (op[1:], op[0])
+                names[op] = ("Use sound set '%s' for channel %s") % (op[1:], op[0])
             elif 'CHANNEL_AUDIO' in op:
                 names[op] = 'Channel %i is' % (op[-1]=='2' and 2 or 1)
-        Menu.__init__(self, options, vals, {}, names, title=_('Choose sound sets to Sound n-back tasks.'))
+        Menu.__init__(self, options, vals, {}, names, title=('Choose sound sets to Sound n-back tasks.'))
         
     def close(self):
         config.cfg.AUDIO1_SETS = []
@@ -1252,9 +1252,9 @@ class UpdateLabel:
     def update(self):
         if not mode.started and update_available:
             str_list = []
-            str_list.append(_('An update is available ('))
+            str_list.append(('An update is available ('))
             str_list.append(str(update_version))
-            str_list.append(_('). Press W to open web site'))
+            str_list.append(('). Press W to open web site'))
             self.label.text = ''.join(str_list)
         else: self.label.text = ''
         
@@ -1274,14 +1274,14 @@ class GameModeLabel:
         else:
             str_list = []
             if config.cfg.JAEGGI_MODE and not param.CLINICAL_MODE:
-                str_list.append(_('Jaeggi mode: '))
+                str_list.append(('Jaeggi mode: '))
             if mode.manual:
-                str_list.append(_('Manual mode: '))
+                str_list.append(('Manual mode: '))
             str_list.append(mode.long_mode_names[mode.mode] + ' ')
             if config.cfg.VARIABLE_NBACK:
-                str_list.append(_('V. '))
+                str_list.append(('V. '))
             str_list.append(str(mode.back))
-            str_list.append(_('-Back'))
+            str_list.append(('-Back'))
             self.label.text = ''.join(str_list)
 
     def flash(self):
@@ -1304,7 +1304,7 @@ class JaeggiWarningLabel:
 
     def show(self):
         pyglet.clock.unschedule(jaeggiWarningLabel.hide)
-        self.label.text = _('Please disable Jaeggi Mode to access additional modes.')
+        self.label.text = ('Please disable Jaeggi Mode to access additional modes.')
         pyglet.clock.schedule_once(jaeggiWarningLabel.hide, 3.0)
     def hide(self, dt):
         self.label.text = ''
@@ -1325,64 +1325,64 @@ class KeysListLabel:
         if mode.started:
             self.label.y = window.height - 10
             if not mode.hide_text:
-                str_list.append(_('P: Pause / Unpause\n'))
+                str_list.append(('P: Pause / Unpause\n'))
                 str_list.append('\n')
-                str_list.append(_('F8: Hide / Reveal Text\n'))
+                str_list.append(('F8: Hide / Reveal Text\n'))
                 str_list.append('\n')                
-                str_list.append(_('ESC: Cancel Session\n'))
+                str_list.append(('ESC: Cancel Session\n'))
         elif param.CLINICAL_MODE:
             self.label.y = window.height - 10
-            str_list.append(_('ESC: Exit'))
+            str_list.append(('ESC: Exit'))
         else:
             if mode.manual or config.cfg.JAEGGI_MODE:
                 self.label.y = window.height - 10
             else:
                 self.label.y = window.height - 40
             if 'morse' in config.cfg.AUDIO1_SETS or 'morse' in config.cfg.AUDIO2_SETS:
-                str_list.append(_('J: Morse Code Reference\n'))
+                str_list.append(('J: Morse Code Reference\n'))
                 str_list.append('\n')
-            str_list.append(_('H: Help / Tutorial\n'))
+            str_list.append(('H: Help / Tutorial\n'))
             str_list.append('\n')
             if mode.manual:
-                str_list.append(_('F1: Decrease N-Back\n'))
-                str_list.append(_('F2: Increase N-Back\n'))
+                str_list.append(('F1: Decrease N-Back\n'))
+                str_list.append(('F2: Increase N-Back\n'))
                 str_list.append('\n')
-                str_list.append(_('F3: Decrease Trials\n'))
-                str_list.append(_('F4: Increase Trials\n'))
+                str_list.append(('F3: Decrease Trials\n'))
+                str_list.append(('F4: Increase Trials\n'))
                 str_list.append('\n')
             if mode.manual:
-                str_list.append(_('F5: Decrease Speed\n'))
-                str_list.append(_('F6: Increase Speed\n'))
+                str_list.append(('F5: Decrease Speed\n'))
+                str_list.append(('F6: Increase Speed\n'))
                 str_list.append('\n')
-            str_list.append(_('C: Choose Game Type\n'))
-            str_list.append(_('S: Select Sounds\n'))
-            str_list.append(_('I: Select Images\n'))
+            str_list.append(('C: Choose Game Type\n'))
+            str_list.append(('S: Select Sounds\n'))
+            str_list.append(('I: Select Images\n'))
             if mode.manual:
-                str_list.append(_('M: Standard Mode\n'))
+                str_list.append(('M: Standard Mode\n'))
             else:
-                str_list.append(_('M: Manual Mode\n'))
-            str_list.append(_('D: Donate\n'))
+                str_list.append(('M: Manual Mode\n'))
+            str_list.append(('D: Donate\n'))
             str_list.append('\n')
-            str_list.append(_('G: Daily Progress Graph\n'))
+            str_list.append(('G: Daily Progress Graph\n'))
             str_list.append('\n')
-            str_list.append(_('W: Brain Workshop Web Site\n'))
+            str_list.append(('W: Brain Workshop Web Site\n'))
             if config.cfg.WINDOW_FULLSCREEN:
-                str_list.append(_('E: Saccadic Eye Exercise\n'))
+                str_list.append(('E: Saccadic Eye Exercise\n'))
             str_list.append('\n')
-            str_list.append(_('ESC: Exit\n'))
+            str_list.append(('ESC: Exit\n'))
             
         self.label.text = ''.join(str_list)
 
 class TitleMessageLabel:
     def __init__(self):
         self.label = pyglet.text.Label(
-            _('Brain Workshop'),
+            ('Brain Workshop'),
             #multiline = True, width = window.width // 2,
             font_size = 32, bold = True, color = config.cfg.COLOR_TEXT,
             x = window.width // 2, y = window.height - 35,
             anchor_x = 'center', anchor_y = 'center')
         self.label2 = pyglet.text.Label(
-            _('Version ') + str(param.VERSION),
+            ('Version ') + str(param.VERSION),
             font_size = 14, bold = False, color = config.cfg.COLOR_TEXT,
             x = window.width // 2, y = window.height - 75,
             anchor_x = 'center', anchor_y = 'center')
@@ -1395,17 +1395,17 @@ class TitleKeysLabel:
     def __init__(self):
         str_list = []
         if not (config.cfg.JAEGGI_MODE or param.CLINICAL_MODE):
-            str_list.append(_('C: Choose Game Mode\n'))
-            str_list.append(_('S: Choose Sounds\n'))
-            str_list.append(_('I: Choose Images\n'))
+            str_list.append(('C: Choose Game Mode\n'))
+            str_list.append(('S: Choose Sounds\n'))
+            str_list.append(('I: Choose Images\n'))
         if not param.CLINICAL_MODE:
-            str_list.append(_('U: Choose User\n'))
-            str_list.append(_('G: Daily Progress Graph\n'))
-        str_list.append(_('H: Help / Tutorial\n'))
+            str_list.append(('U: Choose User\n'))
+            str_list.append(('G: Daily Progress Graph\n'))
+        str_list.append(('H: Help / Tutorial\n'))
         if not param.CLINICAL_MODE:
-            str_list.append(_('D: Donate\n'))
-            str_list.append(_('F: Go to Forum / Mailing List\n'))
-            str_list.append(_('O: Edit configuration file'))
+            str_list.append(('D: Donate\n'))
+            str_list.append(('F: Go to Forum / Mailing List\n'))
+            str_list.append(('O: Edit configuration file'))
         
         self.keys = pyglet.text.Label(
             ''.join(str_list),
@@ -1415,7 +1415,7 @@ class TitleKeysLabel:
             anchor_x = 'center', anchor_y = 'top')
         
         self.space = pyglet.text.Label(
-            _('Press SPACE to enter the Workshop'),
+            ('Press SPACE to enter the Workshop'),
             font_size = 20, bold = True, color = (32, 32, 255, 255),
             x = window.width // 2, y = 35,
             anchor_x = 'center', anchor_y = 'center')
@@ -1477,15 +1477,15 @@ class CongratsLabel:
     def update(self, show=False, advance=False, fallback=False, awesome=False, great=False, good=False, perfect = False):
         str_list = []
         if show and not param.CLINICAL_MODE and config.cfg.USE_SESSION_FEEDBACK:
-            if perfect: str_list.append(_('Perfect score! '))
-            elif awesome: str_list.append(_('Awesome score! '))
-            elif great: str_list.append(_('Great score! '))
-            elif good: str_list.append(_('Not bad! '))
-            else: str_list.append(_('Keep trying. You\'re getting there! '))
+            if perfect: str_list.append(('Perfect score! '))
+            elif awesome: str_list.append(('Awesome score! '))
+            elif great: str_list.append(('Great score! '))
+            elif good: str_list.append(('Not bad! '))
+            else: str_list.append(('Keep trying. You\'re getting there! '))
         if advance:
-            str_list.append(_('N-Back increased'))
+            str_list.append(('N-Back increased'))
         elif fallback:
-            str_list.append(_('N-Back decreased'))
+            str_list.append(('N-Back decreased'))
         self.label.text = ''.join(str_list)
         
 class FeedbackLabel:
@@ -1517,10 +1517,10 @@ class FeedbackLabel:
 	else:
 	    self.mousetext = ""
 
-        self.text = "%s %s: %s" % (_(self.mousetext), self.letter, _(modalityname)) # FIXME: will this break pyglettext?
+        self.text = "%s %s: %s" % ((self.mousetext), self.letter, (modalityname)) # FIXME: will this break pyglettext?
 
         if total < 4:
-            self.text += _(' match')
+            self.text += (' match')
             font_size = 16
         elif total < 5: font_size = 14
         elif total < 6: font_size = 13
@@ -1625,16 +1625,16 @@ class ArithmeticAnswerLabel:
         
         self.label.font_size = 16
         str_list = []
-        str_list.append(_('Answer: '))
+        str_list.append(('Answer: '))
         str_list.append(str(self.parse_answer()))
         self.label.text = ''.join(str_list)
         
         if config.cfg.SHOW_FEEDBACK and mode.show_missed:
             result = check_match('arithmetic')
-            if result == _('correct'):
+            if result == ('correct'):
                 self.label.color = config.cfg.COLOR_LABEL_CORRECT
                 self.label.bold = True
-            if result == _('incorrect'):
+            if result == ('incorrect'):
                 self.label.color = config.cfg.COLOR_LABEL_INCORRECT
                 self.label.bold = True
         else:
@@ -1686,7 +1686,7 @@ class SessionInfoLabel:
         if mode.started or param.CLINICAL_MODE:
             self.label.text = ''
         else:
-            self.label.text = _('Session:\n%1.2f sec/trial\n%i+%i trials\n%i seconds') % \
+            self.label.text = ('Session:\n%1.2f sec/trial\n%i+%i trials\n%i seconds') % \
                               (mode.ticks_per_trial / 10.0, mode.num_trials, \
                                mode.num_trials_total - mode.num_trials, 
                                int((mode.ticks_per_trial / 10.0) * \
@@ -1715,7 +1715,7 @@ class ThresholdLabel:
         if mode.started or mode.manual or param.CLINICAL_MODE:
             self.label.text = ''
         else:
-            self.label.text = _(u'Thresholds:\nRaise level: \u2265 %i%%\nLower level: < %i%%') % \
+            self.label.text = (u'Thresholds:\nRaise level: \u2265 %i%%\nLower level: < %i%%') % \
             (config.get_threshold_advance(), config.get_threshold_fallback())   # '\u2265' = '>='
         
 # this controls the "press space to begin session #" text.
@@ -1734,15 +1734,15 @@ class SpaceLabel:
             self.label.text = ''
         else: 
             str_list = []
-            str_list.append(_('Press SPACE to begin session #'))
+            str_list.append(('Press SPACE to begin session #'))
             str_list.append(str(mode.session_number + 1))
             str_list.append(': ')
             str_list.append(mode.long_mode_names[mode.mode] + ' ')
                 
             if config.cfg.VARIABLE_NBACK:
-                str_list.append(_('V. '))
+                str_list.append(('V. '))
             str_list.append(str(mode.back))
-            str_list.append(_('-Back'))
+            str_list.append(('-Back'))
             self.label.text = ''.join(str_list)
         
 def check_match(input_type, check_missed = False):
@@ -1863,7 +1863,7 @@ class AnalysisLabel:
         
         str_list = []
         if not param.CLINICAL_MODE:
-            str_list += [_('Correct-Errors:   ')]
+            str_list += [('Correct-Errors:   ')]
             sep = '   '
             keys = dict([(mod, config.cfg['KEY_%s' % mod.upper()]) for mod in poss_mods[:-1]]) # exclude 'arithmetic'
             
@@ -1874,7 +1874,7 @@ class AnalysisLabel:
                     str_list += ["%s:%i-%i%s" % (keytext, rights[mod], wrongs[mod], sep)]
     
             if 'arithmetic' in mods:
-                str_list += ["%s:%i-%i%s" % (_("Arithmetic"), rights['arithmetic'], wrongs['arithmetic'], sep)]
+                str_list += ["%s:%i-%i%s" % (("Arithmetic"), rights['arithmetic'], wrongs['arithmetic'], sep)]
              
         def calc_percent(r, w):
             if r+w: return int(r*100 / float(r+w))
@@ -1890,10 +1890,10 @@ class AnalysisLabel:
             percent = min([category_percents[m] for m in mode.modalities[mode.mode]])
             #percent = min(category_percents['position1'], category_percents['audio']) # config.cfg.JAEGGI_MODE forces mode.mode==2
             if not param.CLINICAL_MODE:
-                str_list += [_('Lowest score: %i%%') % percent]
+                str_list += [('Lowest score: %i%%') % percent]
         else:
             percent = calc_percent(right, wrong)
-            str_list += [_('Score: %i%%') % percent]
+            str_list += [('Score: %i%%') % percent]
         
         self.label.text = ''.join(str_list)
 
@@ -1917,7 +1917,7 @@ class ChartTitleLabel:
         if mode.started:
             self.label.text = ''
         else:
-            self.label.text = _('Today\'s Last 20:')
+            self.label.text = ('Today\'s Last 20:')
 
 # this controls the session history chart.
 class ChartLabel:
@@ -1995,7 +1995,7 @@ class AverageLabel:
                 average = sum([sess[2] for sess in sessions]) / float(len(sessions))
             else:
                 average = 0.
-            self.label.text = _("%sNB average: %1.2f") % (mode.short_mode_names[mode.mode], average)
+            self.label.text = ("%sNB average: %1.2f") % (mode.short_mode_names[mode.mode], average)
 
 
 class TodayLabel:
@@ -2015,7 +2015,7 @@ class TodayLabel:
              his[2] ** mode.num_trials_exponent for his in stats.history])
             total_time = mode.ticks_per_trial * param.TICK_DURATION * total_trials
             
-            self.labelTitle.text = _("%i min %i sec done today in %i sessions\
+            self.labelTitle.text = ("%i min %i sec done today in %i sessions\
 			    %i min %i sec done in last 24 hours in %i sessions" % (stats.time_today//60, stats.time_today%60, stats.sessions_today, stats.time_thours//60, stats.time_thours%60, stats.sessions_thours))
 
 class TrialsRemainingLabel:
@@ -2031,7 +2031,7 @@ class TrialsRemainingLabel:
         if (not mode.started) or mode.hide_text:
             self.label.text = ''
         else:
-            self.label.text = _('%i remaining') % (mode.num_trials_total - mode.trial_number)
+            self.label.text = ('%i remaining') % (mode.num_trials_total - mode.trial_number)
            
 class Saccadic:
     def __init__(self):
@@ -2083,20 +2083,20 @@ class Saccadic:
 class Panhandle:
     def __init__(self, n=-1):
         paragraphs = [ 
-_("""
+("""
 You have completed %i sessions with Brain Workshop.  Your perseverance suggests \
 that you are finding some benefit from using the program.  If you have been \
 benefiting from Brain Workshop, don't you think Brain Workshop should \
 benefit from you?
 """) % n, 
-_("""
+("""
 Brain Workshop is and always will be 100% free.  Up until now, Brain Workshop \
 as a project has succeeded because a very small number of people have each \
 donated a huge amount of time to it.  It would be much better if the project \
 were supported by small donations from a large number of people.  Do your \
 part.  Donate.
 """),
-_("""
+("""
 As of March 2010, Brain Workshop has been downloaded over 75,000 times in 20 \
 months.  If each downloader donated an average of $1, we could afford to pay \
 decent full- or part-time salaries (as appropriate) to all of our developers, \
@@ -2105,7 +2105,7 @@ Workshop.  With $2 per downloader, or with more downloaders, we could afford \
 to fund controlled experiments and clinical trials on Brain Workshop and \
 cognitive training.  Help us make that vision a reality.  Donate.
 """),  
-_("""
+("""
 The authors think it important that access to cognitive training \
 technologies be available to everyone as freely as possible.  Like other \
 forms of education, cognitive training should not be a luxury of the rich, \
@@ -2116,13 +2116,13 @@ Workshop because they have far more resources for research, development, and \
 marketing.  Help us bridge that gap and improve social equality of \
 opportunity.  Donate.
 """),
-_("""
+("""
 Brain Workshop has many known bugs and missing features.  The developers \
 would like to fix these issues, but they also have to work in order to be \
 able to pay for rent and food.  If you think the developers' time is better \
 spent programming than serving coffee, then do something about it.  Donate.
 """),
-_("""
+("""
 Press SPACE to continue, or press D to donate now.
 """)]    # feel free to add more paragraphs or to change the chances for the 
         # paragraphs you like and dislike, etc.
@@ -2261,9 +2261,9 @@ class Stats:
                 self.retrieve_progress()
                 
             except:
-                quit_with_error(_('Error parsing stats file\n%s') %
+                quit_with_error(('Error parsing stats file\n%s') %
                                 os.path.join(get_data_dir(), config.cfg.STATSFILE),
-                                _('\nPlease fix, delete or rename the stats file.'),
+                                ('\nPlease fix, delete or rename the stats file.'),
                                 quit=False)
     
     def retrieve_progress(self):
@@ -2417,7 +2417,7 @@ class Stats:
                 statsfile.write('\n')  # but we don't want a sep before '\n'
                 statsfile.close()
                 if param.CLINICAL_MODE:
-                    picklefile = open(os.path.join(get_data_dir(), STATS_BINARY), 'ab')
+                    picklefile = open(os.path.join(get_data_dir(), param.STATS_BINARY), 'ab')
                     pickle.dump([strftime("%Y-%m-%d %H:%M:%S"), mode.short_name(), 
                                  percent, mode.mode, mode.back, mode.ticks_per_trial,
                                  mode.num_trials_total, int(mode.manual),
@@ -2433,7 +2433,7 @@ class Stats:
                                 picklefile, protocol=2)
                     picklefile.close()
                 config.cfg.SAVE_SESSIONS = True # FIXME: put this where it belongs
-                config.cfg.SESSION_STATS = USER + '-sessions.dat' # FIXME: default user; configurability
+                config.cfg.SESSION_STATS = param.USER + '-sessions.dat' # FIXME: default user; configurability
                 if config.cfg.SAVE_SESSIONS:
                     picklefile = open(os.path.join(get_data_dir(), config.cfg.SESSION_STATS), 'ab')
                     session = {} # it's not a dotdict because we want to pickle it
@@ -2449,9 +2449,9 @@ class Stats:
                     pickle.dump(session, picklefile)
                     picklefile.close()
             except:
-                quit_with_error(_('Error writing to stats file\n%s') % 
+                quit_with_error(('Error writing to stats file\n%s') %
                                 os.path.join(get_data_dir(), config.cfg.STATSFILE),
-                                _('\nPlease check file and directory permissions.'))
+                                ('\nPlease check file and directory permissions.'))
 
         perfect = False        
         awesome = False
@@ -2809,7 +2809,7 @@ def generate_stimulus():
                     conflict_positions = [positions[i-1] for i in potential_conflicts]
                     if matching_stim in conflict_positions: # swap 'em
                         i = positions.index(matching_stim)
-                        if DEBUG:
+                        if param.DEBUG:
                             print "moving position%i from %i to %i for %s" % (i+1, positions[i], mode.current_stim[current], current)
                         mode.current_stim['position' + `i+1`] = mode.current_stim[current]
                         positions[i] = mode.current_stim[current]
@@ -2904,7 +2904,7 @@ def generate_stimulus():
     else: # multi > 1
         for i in range(1, multi+1):
             if config.cfg.MULTI_MODE == 'color':
-                if DEBUG:
+                if param.DEBUG:
                     print "trial=%i, \tpos=%i, \taud=%i, \tcol=%i, \tvis=%i, \tnum=%i,\top=%s, \tvar=%i" % \
                         (mode.trial_number, mode.current_stim['position' + `i`], mode.current_stim['audio'], 
                         config.cfg.VISUAL_COLORS[i-1], mode.current_stim['vis'+`i`], \
@@ -2913,7 +2913,7 @@ def generate_stimulus():
                                    mode.current_stim['vis'+`i`], mode.current_stim['number'], 
                                    mode.current_operation, variable)
             else:
-                if DEBUG:
+                if param.DEBUG:
                     print "trial=%i, \tpos=%i, \taud=%i, \tcol=%i, \tvis=%i, \tnum=%i,\top=%s, \tvar=%i" % \
                         (mode.trial_number, mode.current_stim['position' + `i`], mode.current_stim['audio'], 
                         mode.current_stim['vis'+`i`], i, \
@@ -2938,7 +2938,7 @@ def set_user(newuser):
     if param.USER.lower() == 'default':
         param.CONFIGFILE = 'config.ini'
     else:
-        param.CONFIGFILE = USER + '-config.ini'
+        param.CONFIGFILE = param.USER + '-config.ini'
     config.rewrite_configfile(param.CONFIGFILE, overwrite=False)
     config.cfg = config.parse_config(param.CONFIGFILE)
     stats.initialize_session()
@@ -3013,7 +3013,7 @@ def on_key_press(symbol, modifiers):
         elif symbol == key.D and not param.CLINICAL_MODE:
             webbrowser.open_new_tab(param.WEB_DONATE)
             
-        elif symbol == key.V and DEBUG:
+        elif symbol == key.V and param.DEBUG:
             OptionsScreen()
 
         elif symbol == key.G:
