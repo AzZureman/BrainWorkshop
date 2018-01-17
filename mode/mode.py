@@ -1,6 +1,3 @@
-from parameters import *
-
-
 # All changeable game state variables are located in an instance of the Mode class
 class Mode:
     def __init__(self, cfg):
@@ -10,9 +7,7 @@ class Mode:
         self.num_trials = cfg.NUM_TRIALS
         self.num_trials_factor = cfg.NUM_TRIALS_FACTOR
         self.num_trials_exponent = cfg.NUM_TRIALS_EXPONENT
-        self.num_trials_total = self.num_trials + self.num_trials_factor * \
-            self.back ** self.num_trials_exponent
-
+        self.num_trials_total = self.num_trials + self.num_trials_factor * self.back ** self.num_trials_exponent
         self.short_mode_names = {2:'D',
                                  3:'PCA',
                                  4:'DC',
@@ -42,8 +37,7 @@ class Mode:
                                  106:'CIAA',
                                  107:'P'
                                  }
-
-        self.long_mode_names =  {2:_('Dual'),
+        self.long_mode_names = { 2:_('Dual'),
                                  3:_('Position, Color, Sound'),
                                  4:_('Dual Combination'),
                                  5:_('Tri Combination'),
@@ -72,7 +66,6 @@ class Mode:
                                  106:_('Color, Image, Sound, Sound2'),
                                  107:_('Pentuple')
                                  }
-
         self.modalities = { 2:['position1', 'audio'],
                             3:['position1', 'color', 'audio'],
                             4:['visvis', 'visaudio', 'audiovis', 'audio'],
@@ -102,7 +95,6 @@ class Mode:
                             106:['color', 'image', 'audio', 'audio2'],
                             107:['position1', 'color', 'image', 'audio', 'audio2']
                             }
-
         self.flags = {}
 
         # generate crab modes

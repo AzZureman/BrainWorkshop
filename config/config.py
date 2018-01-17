@@ -140,3 +140,15 @@ if not cfg.USE_SESSION_FEEDBACK:
 
 if cfg.BLACK_BACKGROUND:
     cfg.COLOR_TEXT=cfg.COLOR_TEXT_BLK
+
+
+def get_threshold_advance():
+    if cfg.JAEGGI_SCORING:
+        return cfg.JAEGGI_ADVANCE
+    return cfg.THRESHOLD_ADVANCE
+
+
+def get_threshold_fallback():
+    if cfg.JAEGGI_SCORING:
+        return cfg.JAEGGI_FALLBACK
+    return cfg.THRESHOLD_FALLBACK
