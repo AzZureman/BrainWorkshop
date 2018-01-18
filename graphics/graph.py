@@ -1,17 +1,21 @@
-import pyglet, os, math
+import pyglet
+import os
+import math
 from pyglet.gl import *
 from datetime import *
 import config
-from utils import *
+import utils
+import window as wnd
+import modes as md
 
 
 class Graph:
-    def __init__(self, window, mode):
-        self.window = window
-        self.mode = mode
+    def __init__(self):
         self.graph = 2
         self.reset_dictionaries()
         self.reset_percents()
+        self.dictionaries = None
+        self.percents = None
         self.batch = None
         self.styles = ['N+10/3+4/3', 'N', '%', 'N.%', 'N+2*%-1']
         self.style = 0
@@ -22,10 +26,10 @@ class Graph:
         self.parse_stats()
 
     def reset_dictionaries(self):
-        self.dictionaries = dict([(i, {}) for i in self.mode.modalities])
+        self.dictionaries = dict([(i, {}) for i in md.mode.modalities])
 
     def reset_percents(self):
-        self.percents = dict([(k, dict([(i, []) for i in v])) for k, v in self.mode.modalities.items()])
+        self.percents = dict([(k, dict([(i, []) for i in v])) for k, v in md.mode.modalities.items()])
 
     def next_nonempty_mode(self):
         self.next_mode()
@@ -36,7 +40,7 @@ class Graph:
             mode2 = mode1
 
     def next_mode(self):
-        modes = self.mode.modalities.keys()
+        modes = md.mode.modalities.keys()
         modes.sort()
         i = modes.index(self.graph)
         i = (i + 1) % len(modes)
@@ -54,14 +58,17 @@ class Graph:
                'position3': 19, 'position4': 20, 'vis1': 21, 'vis2': 22, 'vis3': 23,
                'vis4': 24}
 
-        if os.path.isfile(os.path.join(get_data_dir(), config.cfg.STATSFILE)):
+        if os.path.isfile(os.path.join(utils.get_data_dir(), config.cfg.STATSFILE)):
             try:
-                statsfile_path = os.path.join(get_data_dir(), config.cfg.STATSFILE)
+                statsfile_path = os.path.join(utils.get_data_dir(), config.cfg.STATSFILE)
                 statsfile = open(statsfile_path, 'r')
                 for line in statsfile:
-                    if line == '': continue
-                    if line == '\n': continue
-                    if line[0] not in '0123456789': continue
+                    if line == '':
+                        continue
+                    if line == '\n':
+                        continue
+                    if line[0] not in '0123456789':
+                        continue
                     datestamp = date(int(line[:4]), int(line[5:7]), int(line[8:10]))
                     hour = int(line[11:13])
                     if hour < config.cfg.ROLLOVER_HOUR:
@@ -82,20 +89,20 @@ class Graph:
                     while len(newline) < 24:
                         newline.append('0')  # make it work for image mode, missing visaudio and audio2
                     if len(newline) >= 16:
-                        for m in self.mode.modalities[newmode]:
+                        for m in md.mode.modalities[newmode]:
                             self.percents[newmode][m].append(int(newline[ind[m]]))
 
                     dictionary = self.dictionaries[newmode]
                     if datestamp not in dictionary:
                         dictionary[datestamp] = []
-                    dictionary[datestamp].append([newback] + [int(newline[2])] + \
-                                                 [self.percents[newmode][n][-1] for n in self.mode.modalities[newmode]])
+                    dictionary[datestamp].append([newback] + [int(newline[2])] +
+                                                 [self.percents[newmode][n][-1] for n in md.mode.modalities[newmode]])
 
                 statsfile.close()
             except:
-                quit_with_error(_('Error parsing stats file\n %s') %
-                                os.path.join(get_data_dir(), config.cfg.STATSFILE),
-                                _('Please fix, delete or rename the stats file.'))
+                utils.quit_with_error('Error parsing stats file\n %s' %
+                                      os.path.join(utils.get_data_dir(), config.cfg.STATSFILE),
+                                      'Please fix, delete or rename the stats file.')
 
             def mean(x):
                 if len(x):
@@ -103,8 +110,8 @@ class Graph:
                 else:
                     return 0.
 
-            def cent(x):
-                return map(lambda y: .01 * y, x)
+            # def cent(x):
+            #     return map(lambda y: .01 * y, x)
 
             for dictionary in self.dictionaries.values():
                 for datestamp in dictionary.keys():  # this would be so much easier with numpy
@@ -167,6 +174,7 @@ class Graph:
             self.batch.draw()
 
     def create_batch(self):
+        dictionary = 0
         self.batch = pyglet.graphics.Batch()
 
         linecolor = (0, 0, 255)
@@ -181,10 +189,10 @@ class Graph:
         x_label_width = 20
         y_marking_interval = 0.25
 
-        height = int(self.window.height * 0.625)
-        width = int(self.window.width * 0.625)
-        center_x = self.window.width // 2
-        center_y = self.window.height // 2 + 20
+        height = int(wnd.window.height * 0.625)
+        width = int(wnd.window.width * 0.625)
+        center_x = wnd.window.width // 2
+        center_y = wnd.window.height // 2 + 20
         left = center_x - width // 2
         right = center_x + width // 2
         top = center_y + height // 2
@@ -193,21 +201,22 @@ class Graph:
             dictionary = self.dictionaries[self.graph]
         except:
             print self.graph
-        graph_title = self.mode.long_mode_names[self.graph] + _(' N-Back')
+        graph_title = md.mode.long_mode_names[self.graph] + ' N-Back'
 
         self.batch.add(3, GL_LINE_STRIP,
                        pyglet.graphics.OrderedGroup(order=1), ('v2i', (
-                left, top,
-                left, bottom,
-                right, bottom)), ('c3B', axiscolor * 3))
+                        left, top,
+                        left, bottom,
+                        right, bottom)),
+                       ('c3B', axiscolor * 3))
 
         pyglet.text.Label(
-            _('G: Return to Main Screen\n\nN: Next Game Type'),
+            'G: Return to Main Screen\n\nN: Next Game Type',
             batch=self.batch,
             multiline=True, width=300,
             font_size=9,
-            color = config.cfg.COLOR_TEXT,
-            x = 10, y = self.window.height - 10,
+            color=config.cfg.COLOR_TEXT,
+            x=10, y=wnd.window.height - 10,
             anchor_x='left', anchor_y='top')
 
         pyglet.text.Label(graph_title,
@@ -216,25 +225,25 @@ class Graph:
                           x=center_x, y=top + 60,
                           anchor_x='center', anchor_y='center')
 
-        pyglet.text.Label(_('Date'),
+        pyglet.text.Label('Date',
                           batch=self.batch,
                           font_size=12, bold=True, color=config.cfg.COLOR_TEXT,
                           x=center_x, y=bottom - 80,
                           anchor_x='center', anchor_y='center')
 
-        pyglet.text.Label(_('Maximum'), width=1,
+        pyglet.text.Label('Maximum', width=1,
                           batch=self.batch,
                           font_size=12, bold=True, color=linecolor2 + (255,),
                           x=left - 60, y=center_y + 50,
                           anchor_x='right', anchor_y='center')
 
-        pyglet.text.Label(_('Average'), width=1,
+        pyglet.text.Label('Average', width=1,
                           batch=self.batch,
                           font_size=12, bold=True, color=linecolor + (255,),
                           x=left - 60, y=center_y + 25,
                           anchor_x='right', anchor_y='center')
 
-        pyglet.text.Label(_('Score'), width=1,
+        pyglet.text.Label('Score', width=1,
                           batch=self.batch,
                           font_size=12, bold=True, color=config.cfg.COLOR_TEXT,
                           x=left - 60, y=center_y,
@@ -243,7 +252,7 @@ class Graph:
         dates = dictionary.keys()
         dates.sort()
         if len(dates) < 2:
-            pyglet.text.Label(_('Insufficient data: two days needed'),
+            pyglet.text.Label('Insufficient data: two days needed',
                               batch=self.batch,
                               font_size=12, bold=True, color=axiscolor + (255,),
                               x=center_x, y=center_y,
@@ -301,12 +310,14 @@ class Graph:
                                   anchor_x='center', anchor_y='top')
                 self.batch.add(2, GL_LINES,
                                pyglet.graphics.OrderedGroup(order=0), ('v2i', (
-                        x, bottom,
-                        x, top)), ('c3B', minorcolor * 2))
+                                x, bottom,
+                                x, top)),
+                               ('c3B', minorcolor * 2))
                 self.batch.add(2, GL_LINES,
                                pyglet.graphics.OrderedGroup(order=1), ('v2i', (
-                        x, bottom - 10,
-                        x, bottom)), ('c3B', axiscolor * 2))
+                                x, bottom - 10,
+                                x, bottom)),
+                               ('c3B', axiscolor * 2))
 
         pyglet.clock.tick(poll=True)  # Prevent music skipping 2
 
@@ -320,12 +331,14 @@ class Graph:
                               anchor_x='center', anchor_y='center')
             self.batch.add(2, GL_LINES,
                            pyglet.graphics.OrderedGroup(order=0), ('v2i', (
-                    left, y,
-                    right, y)), ('c3B', minorcolor * 2))
+                            left, y,
+                            right, y)),
+                           ('c3B', minorcolor * 2))
             self.batch.add(2, GL_LINES,
                            pyglet.graphics.OrderedGroup(order=1), ('v2i', (
-                    left - 10, y,
-                    left, y)), ('c3B', axiscolor * 2))
+                            left - 10, y,
+                            left, y)),
+                           ('c3B', axiscolor * 2))
             y_marking += y_marking_interval
 
         self.batch.add(len(avgpoints) // 2, GL_LINE_STRIP,
@@ -366,21 +379,21 @@ class Graph:
 
         pyglet.clock.tick(poll=True)  # Prevent music skipping 4
 
-        labelstrings = {'position1': _('Position: '), 'position2': _('Position 2: '),
-                        'position3': _('Position 3: '), 'position4': _('Position 4: '),
-                        'vis1': _('Color/Image 1: '), 'vis2': _('Color/Image 2: '),
-                        'vis3': _('Color/Image 3: '), 'vis4': _('Color/Image 4: '),
-                        'visvis': _('Vis & nvis: '), 'visaudio': _('Vis & n-sound: '),
-                        'audiovis': _('Sound & n-vis: '), 'audio': _('Sound: '),
-                        'color': _('Color: '), 'image': _('Image: '),
-                        'arithmetic': _('Arithmetic: '), 'audio2': _('Sound2: ')}
-        str_list = [_('Last 50 rounds:   ')]
-        for m in self.mode.modalities[self.graph]:
+        labelstrings = {'position1': 'Position: ', 'position2': 'Position 2: ',
+                        'position3': 'Position 3: ', 'position4': 'Position 4: ',
+                        'vis1': 'Color/Image 1: ', 'vis2': 'Color/Image 2: ',
+                        'vis3': 'Color/Image 3: ', 'vis4': 'Color/Image 4: ',
+                        'visvis': 'Vis & nvis: ', 'visaudio': 'Vis & n-sound: ',
+                        'audiovis': 'Sound & n-vis: ', 'audio': 'Sound: ',
+                        'color': 'Color: ', 'image': 'Image: ',
+                        'arithmetic': 'Arithmetic: ', 'audio2': 'Sound2: '}
+        str_list = ['Last 50 rounds:   ']
+        for m in md.mode.modalities[self.graph]:
             str_list.append(labelstrings[m] + '%i%% ' % self.percents[self.graph][m][-1]
-                            + ' ' * (7 - len(self.mode.modalities[self.graph])))
+                            + ' ' * (7 - len(md.mode.modalities[self.graph])))
 
         pyglet.text.Label(''.join(str_list),
                           batch=self.batch,
                           font_size=11, bold=False, color=config.cfg.COLOR_TEXT,
-                          x=self.window.width // 2, y=20,
+                          x=wnd.window.width // 2, y=20,
                           anchor_x='center', anchor_y='center')

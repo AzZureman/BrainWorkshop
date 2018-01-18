@@ -41,34 +41,34 @@ class Mode:
                                  106:'CIAA',
                                  107:'P'
                                  }
-        self.long_mode_names = { 2:_('Dual'),
-                                 3:_('Position, Color, Sound'),
-                                 4:_('Dual Combination'),
-                                 5:_('Tri Combination'),
-                                 6:_('Quad Combination'),
-                                 7:_('Arithmetic'),
-                                 8:_('Dual Arithmetic'),
-                                 9:_('Triple Arithmetic'),
-                                 10:_('Position'),
-                                 11:_('Sound'),
-                                 12:_('Tri Combination (Color)'),
-                                 20:_('Position, Color'),
-                                 21:_('Position, Image'),
-                                 22:_('Color, Sound'),
-                                 23:_('Image, Sound'),
-                                 24:_('Color, Image'),
-                                 25:_('Position, Color, Image'),
-                                 26:_('Position, Image, Sound'),
-                                 27:_('Color, Image, Sound'),
-                                 28:_('Quad'),
-                                 100:_('Sound, Sound2'),
-                                 101:_('Position, Sound, Sound2'),
-                                 102:_('Color, Sound, Sound2'),
-                                 103:_('Image, Sound, Sound2'),
-                                 104:_('Position, Color, Sound, Sound2'),
-                                 105:_('Position, Image, Sound, Sound2'),
-                                 106:_('Color, Image, Sound, Sound2'),
-                                 107:_('Pentuple')
+        self.long_mode_names = { 2:('Dual'),
+                                 3:('Position, Color, Sound'),
+                                 4:('Dual Combination'),
+                                 5:('Tri Combination'),
+                                 6:('Quad Combination'),
+                                 7:('Arithmetic'),
+                                 8:('Dual Arithmetic'),
+                                 9:('Triple Arithmetic'),
+                                 10:('Position'),
+                                 11:('Sound'),
+                                 12:('Tri Combination (Color)'),
+                                 20:('Position, Color'),
+                                 21:('Position, Image'),
+                                 22:('Color, Sound'),
+                                 23:('Image, Sound'),
+                                 24:('Color, Image'),
+                                 25:('Position, Color, Image'),
+                                 26:('Position, Image, Sound'),
+                                 27:('Color, Image, Sound'),
+                                 28:('Quad'),
+                                 100:('Sound, Sound2'),
+                                 101:('Position, Sound, Sound2'),
+                                 102:('Color, Sound, Sound2'),
+                                 103:('Image, Sound, Sound2'),
+                                 104:('Position, Color, Sound, Sound2'),
+                                 105:('Position, Image, Sound, Sound2'),
+                                 106:('Color, Image, Sound, Sound2'),
+                                 107:('Pentuple')
                                  }
         self.modalities = { 2:['position1', 'audio'],
                             3:['position1', 'color', 'audio'],
@@ -107,13 +107,13 @@ class Mode:
             self.flags[m]  = {'crab':0, 'multi':1, 'selfpaced':0}# forwards
             self.flags[nm] = {'crab':1, 'multi':1, 'selfpaced':0}# every (self.back) stimuli are reversed for matching
             self.short_mode_names[nm] = 'C' + self.short_mode_names[m]
-            self.long_mode_names[nm] = _('Crab ') + self.long_mode_names[m]
+            self.long_mode_names[nm] = ('Crab ') + self.long_mode_names[m]
             self.modalities[nm] = self.modalities[m][:] # the [:] at the end is
             # so we take a copy of the list, in case we want to change it later
 
         # generate multi-stim modes
         for m in self.short_mode_names.keys():
-            for n, s in [(2, _('Double-stim')), (3, _('Triple-stim')), (4, _('Quadruple-stim'))]:
+            for n, s in [(2, ('Double-stim')), (3, ('Triple-stim')), (4, ('Quadruple-stim'))]:
                 if set(['color', 'image']).issubset(self.modalities[m]) \
                   or not 'position1' in self.modalities[m] \
                   or set(['visvis', 'arithmetic']).intersection(self.modalities[m]):  # Combination? AAAH! Scary!
@@ -258,3 +258,6 @@ def default_ticks(mode):
         return bonus + default_ticks(mode % 128)
     else:
         return config.cfg.TICKS_DEFAULT
+
+
+mode = Mode()

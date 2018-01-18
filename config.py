@@ -1,7 +1,9 @@
-import os, sys, ConfigParser, StringIO
-from utils import *
+import os, sys, ConfigParser, StringIO, socket, urllib2
+import utils
 import parameters as param
 
+update_available = False
+update_version = 0
 
 class dotdict(dict):
     def __getattr__(self, attr):
@@ -11,8 +13,9 @@ class dotdict(dict):
 
 
 def parse_config(configpath):
+    config = None
     if not (param.CLINICAL_MODE and configpath=='config.ini'):
-        fullpath=os.path.join(get_data_dir(),configpath)
+        fullpath=os.path.join(utils.get_data_dir(),configpath)
         if not os.path.isfile(fullpath):
             rewrite_configfile(configpath,overwrite=False)
 
@@ -36,11 +39,11 @@ def parse_config(configpath):
 
         try:
             config=ConfigParser.ConfigParser()
-            config.read(os.path.join(get_data_dir(),configpath))
+            config.read(os.path.join(utils.get_data_dir(),configpath))
         except:
             if configpath != 'config.ini':
-                quit_with_error(_('Unable to load config file: %s') %
-                                 os.path.join(get_data_dir(), configpath))
+                utils.quit_with_error('Unable to load config file: %s' %
+                                 os.path.join(utils.get_data_dir(), configpath))
 
     defaultconfig=ConfigParser.ConfigParser()
     defaultconfig.readfp(StringIO.StringIO(param.CONFIGFILE_DEFAULT_CONTENTS))
@@ -71,24 +74,24 @@ def rewrite_configfile(configfile, overwrite=False):
     else:
         statsfile = param.USER + '-stats.txt'
     try:
-        os.stat(os.path.join(get_data_dir(), configfile))
+        os.stat(os.path.join(utils.get_data_dir(), configfile))
     except OSError:
         overwrite = True
     if overwrite:
-        f = file(os.path.join(get_data_dir(), configfile), 'w')
+        f = file(os.path.join(utils.get_data_dir(), configfile), 'w')
         newconfigfile_contents = param.CONFIGFILE_DEFAULT_CONTENTS.replace('stats.txt', statsfile)
         f.write(newconfigfile_contents)
         f.close()
     STATS_BINARY = statsfile.replace('-stats.txt', '-logfile.dat') # let's hope nobody uses '-stats.txt' in their username
     try:
-        os.stat(os.path.join(get_data_dir(), statsfile))
+        os.stat(os.path.join(utils.get_data_dir(), statsfile))
     except OSError:
-        f = file(os.path.join(get_data_dir(), statsfile), 'w')
+        f = file(os.path.join(utils.get_data_dir(), statsfile), 'w')
         f.close()
     try:
-        os.stat(os.path.join(get_data_dir(), STATS_BINARY))
+        os.stat(os.path.join(utils.get_data_dir(), STATS_BINARY))
     except OSError:
-        f = file(os.path.join(get_data_dir(), STATS_BINARY), 'w')
+        f = file(os.path.join(utils.get_data_dir(), STATS_BINARY), 'w')
         f.close()
 
 
@@ -152,3 +155,46 @@ def get_threshold_fallback():
     if cfg.JAEGGI_SCORING:
         return cfg.JAEGGI_FALLBACK
     return cfg.THRESHOLD_FALLBACK
+
+
+# The colors of the squares in Triple N-Back mode are defined here.
+# Color 1 is used in Dual N-Back mode.
+def get_color(color):
+    if color in (4, 7) and cfg.BLACK_BACKGROUND:
+        return cfg['COLOR_%i_BLK' % color]
+    return cfg['COLOR_%i' % color]
+
+# this function checks if a new update for Brain Workshop is available.
+def update_check():
+    global update_available
+    global update_version
+    socket.setdefaulttimeout(param.TIMEOUT_SILENT)
+    req = urllib2.Request(param.WEB_VERSION_CHECK)
+    try:
+        response = urllib2.urlopen(req)
+        version = response.readline().strip()
+    except:
+        return
+    if version > param.VERSION: # simply comparing strings works just fine
+        update_available = True
+        update_version = version
+
+if cfg.VERSION_CHECK_ON_STARTUP and not param.CLINICAL_MODE:
+    update_check()
+try:
+    # workaround for pyglet.gl.ContextException error on certain video cards.
+    os.environ["PYGLET_SHADOW_WINDOW"]="0"
+    # import pyglet
+    import pyglet
+    from pyglet.gl import *
+    if param.NOVBO: pyglet.options['graphics_vbo'] = False
+    from pyglet.window import key
+except:
+    utils.quit_with_error('Error: unable to load pyglet.  If you already installed pyglet, \
+                            please ensure ctypes is installed.  Please visit %s' % param.WEB_PYGLET_DOWNLOAD)
+try:
+    pyglet.options['audio'] = ('directsound', 'openal', 'alsa', )
+    # use in pyglet 1.2: pyglet.options['audio'] = ('directsound', 'pulse', 'openal', )
+    import pyglet.media
+except:
+    utils.quit_with_error('No suitable audio driver could be loaded.')
